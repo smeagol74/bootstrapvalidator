@@ -382,6 +382,10 @@ TestSuite = $.extend({}, TestSuite, {
             $('#msg').html('TestSuite.Event.onEmailInvalid() called, ' + data.field + ' is invalid');
         },
 
+        onEmailStatus: function(e, data) {
+            $('#status').html('TestSuite.Event.onEmailStatus() called; status = ' + data.status);
+        },
+
         onFormValid: function(e) {
             $('#msg').html('TestSuite.Event.onFormValid() called, form ' + $(e.target).attr('id') + ' is valid');
         },
@@ -566,13 +570,18 @@ function onEmailInvalid(e, data) {
     $('#msg').html(data.field + ' is invalid');
 };
 
+function onEmailStatus(e, data) {
+    $('#status').html(data.status);
+};
+
 describe('event field attribute callback global', function() {
     beforeEach(function() {
         $([
             '<form class="form-horizontal" id="eventForm">',
                 '<div id="msg"></div>',
+                '<div id="status"></div>',
                 '<div class="form-group">',
-                    '<input type="text" name="email" data-bv-emailaddress data-bv-onsuccess="onEmailValid" data-bv-onerror="onEmailInvalid" />',
+                    '<input type="text" name="email" data-bv-emailaddress data-bv-onsuccess="onEmailValid" data-bv-onerror="onEmailInvalid" data-bv-onstatus="onEmailStatus" />',
                 '</div>',
             '</form>'
         ].join('\n')).appendTo('body');
@@ -591,12 +600,14 @@ describe('event field attribute callback global', function() {
         this.$email.val('email@domain.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('email is valid');
+        expect($('#status').html()).toEqual(this.bv.STATUS_VALID);
     });
 
     it('call data-bv-onerror', function() {
         this.$email.val('email@domain');
         this.bv.validate();
         expect($('#msg').html()).toEqual('email is invalid');
+        expect($('#status').html()).toEqual(this.bv.STATUS_INVALID);
     });
 });
 
@@ -605,8 +616,9 @@ describe('event field attribute callback namespace', function() {
         $([
             '<form class="form-horizontal" id="eventForm">',
                 '<div id="msg"></div>',
+                '<div id="status"></div>',
                 '<div class="form-group">',
-                    '<input type="text" name="email" data-bv-emailaddress data-bv-onsuccess="TestSuite.Event.onEmailValid" data-bv-onerror="TestSuite.Event.onEmailInvalid" />',
+                    '<input type="text" name="email" data-bv-emailaddress data-bv-onsuccess="TestSuite.Event.onEmailValid" data-bv-onerror="TestSuite.Event.onEmailInvalid" data-bv-onstatus="TestSuite.Event.onEmailStatus" />',
                 '</div>',
             '</form>'
         ].join('\n')).appendTo('body');
@@ -625,12 +637,14 @@ describe('event field attribute callback namespace', function() {
         this.$email.val('email@domain.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('TestSuite.Event.onEmailValid() called, email is valid');
+        expect($('#status').html()).toEqual('TestSuite.Event.onEmailStatus() called; status = ' + this.bv.STATUS_VALID);
     });
 
     it('call data-bv-onerror', function() {
         this.$email.val('email@domain');
         this.bv.validate();
         expect($('#msg').html()).toEqual('TestSuite.Event.onEmailInvalid() called, email is invalid');
+        expect($('#status').html()).toEqual('TestSuite.Event.onEmailStatus() called; status = ' + this.bv.STATUS_INVALID);
     });
 });
 
@@ -694,9 +708,6 @@ describe('event field programmatically', function() {
                     },
                     onError: function(e, data) {
                         $('#msg').html('onError() called');
-                    },
-                    validator: {
-                        emailAddress: {}
                     }
                 }
             }
@@ -720,6 +731,376 @@ describe('event field programmatically', function() {
         this.$email.val('email@domain');
         this.bv.validate();
         expect($('#msg').html()).toEqual('onError() called');
+    });
+});
+
+// ---
+// Modifying default events
+// ---
+
+describe('event form trigger with default events', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="eventForm1">',
+                '<div id="msg"></div>',
+                '<div class="form-group">',
+                    '<input type="text" name="email" data-bv-emailaddress />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#eventForm1')
+            .bootstrapValidator()
+            .on('bv.form.success', function(e) {
+                $('#msg').html('form ' + $(e.target).attr('id') + ' triggered bv.form.success event');
+            })
+            .on('success.form.bv', function(e) {
+                $('#msg').html('form ' + $(e.target).attr('id') + ' triggered success.form.bv event');
+            })
+            .on('bv.form.error', function(e) {
+                $('#msg').html('form ' + $(e.target).attr('id') + ' triggered bv.form.error event');
+            })
+            .on('error.form.bv', function(e) {
+                $('#msg').html('form ' + $(e.target).attr('id') + ' triggered error.form.bv event');
+            });
+
+        this.bv     = $('#eventForm1').data('bootstrapValidator');
+        this.$email = this.bv.getFieldElements('email');
+    });
+
+    afterEach(function() {
+        $('#eventForm1').bootstrapValidator('destroy').remove();
+    });
+
+    it('does not trigger bv.form.success', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validate();
+        expect($('#msg').html()).not.toEqual('form eventForm1 triggered bv.form.success event');
+    });
+
+    it('triggers success.form.bv', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('form eventForm1 triggered success.form.bv event');
+    });
+
+    it('does not trigger bv.form.error', function() {
+        this.$email.val('email@domain');
+        this.bv.validate();
+        expect($('#msg').html()).not.toEqual('form eventForm1 triggered bv.form.error event');
+    });
+
+    it('triggers error.form.bv', function() {
+        this.$email.val('email@domain');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('form eventForm1 triggered error.form.bv event');
+    });
+});
+
+describe('event field trigger with default events', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="eventForm3">',
+                '<div id="msg"></div>',
+                '<div class="form-group">',
+                    '<input type="text" name="email" data-bv-emailaddress />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#eventForm3')
+            .bootstrapValidator()
+            .on('success.field.bv', '[name="email"]', function(e, data) {
+                $('#msg').html('triggered success.field.bv on ' + data.field);
+            })
+            .on('error.field.bv', '[name="email"]', function(e, data) {
+                $('#msg').html('triggered error.field.bv on ' + data.field);
+            })
+            .on('bv.field.success', '[name="email"]', function(e, data) {
+                $('#msg').html('triggered bv.field.success on ' + data.field);
+            })
+            .on('bv.field.error', '[name="email"]', function(e, data) {
+                $('#msg').html('triggered bv.field.error on ' + data.field);
+            });
+
+        this.bv     = $('#eventForm3').data('bootstrapValidator');
+        this.$email = this.bv.getFieldElements('email');
+    });
+
+    afterEach(function() {
+        $('#eventForm3').bootstrapValidator('destroy').remove();
+    });
+
+    it('triggers success.field.bv', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('triggered success.field.bv on email');
+    });
+
+    it('does not trigger bv.field.success', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validate();
+        expect($('#msg').html()).not.toEqual('triggered bv.field.success on email');
+    });
+
+    it('does not trigger error.field.bv', function() {
+        this.$email.val('email@domain');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('triggered error.field.bv on email');
+    });
+
+    it('triggers bv.field.error', function() {
+        this.$email.val('email@domain');
+        this.bv.validate();
+        expect($('#msg').html()).not.toEqual('triggered bv.field.error on email');
+    });
+});
+
+describe('event form trigger with events changed', function() {
+    beforeEach(function() {
+        $.fn.bootstrapValidator.DEFAULT_OPTIONS = $.extend({}, $.fn.bootstrapValidator.DEFAULT_OPTIONS, {
+            events: {
+                formInit: 'init.form.bv',
+                formError: 'bv.form.error',
+                formSuccess: 'bv.form.success',
+                fieldAdded: 'added.field.bv',
+                fieldRemoved: 'removed.field.bv',
+                fieldInit: 'init.field.bv',
+                fieldError: 'bv.field.error',
+                fieldSuccess: 'bv.field.success',
+                fieldStatus: 'status.field.bv',
+                validatorError: 'bv.validator.error',
+                validatorSuccess: 'success.validator.bv'
+            }
+        });
+
+        $([
+            '<form class="form-horizontal" id="eventForm2">',
+                '<div id="msg"></div>',
+                '<div class="form-group">',
+                    '<input type="text" name="email" data-bv-emailaddress />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#eventForm2')
+            .bootstrapValidator()
+            .on('bv.form.success', function(e) {
+                $('#msg').html('form ' + $(e.target).attr('id') + ' triggered bv.form.success event');
+            })
+            .on('success.form.bv', function(e) {
+                $('#msg').html('form ' + $(e.target).attr('id') + ' triggered success.form.bv event');
+            })
+            .on('bv.form.error', function(e) {
+                $('#msg').html('form ' + $(e.target).attr('id') + ' triggered bv.form.error event');
+            })
+            .on('error.form.bv', function(e) {
+                $('#msg').html('form ' + $(e.target).attr('id') + ' triggered error.form.bv event');
+            });
+
+        this.bv     = $('#eventForm2').data('bootstrapValidator');
+        this.$email = this.bv.getFieldElements('email');
+    });
+
+    afterEach(function() {
+        $('#eventForm2').bootstrapValidator('destroy').remove();
+    });
+
+    it('triggers bv.form.success', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('form eventForm2 triggered bv.form.success event');
+    });
+
+    it('does not trigger success.form.bv', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validate();
+        expect($('#msg').html()).not.toEqual('form eventForm2 triggered success.form.bv event');
+    });
+
+    it('triggers bv.form.error', function() {
+        spyOn(window, 'onerror');
+
+        this.$email.val('email@domain');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('form eventForm2 triggered bv.form.error event');
+
+        expect(window.onerror).not.toHaveBeenCalled();
+    });
+});
+
+describe('event field trigger with events changed', function() {
+    beforeEach(function () {
+        $.fn.bootstrapValidator.DEFAULT_OPTIONS = $.extend({}, $.fn.bootstrapValidator.DEFAULT_OPTIONS, {
+            events: {
+                formInit: 'init.form.bv',
+                formError: 'bv.form.error',
+                formSuccess: 'bv.form.success',
+                fieldAdded: 'added.field.bv',
+                fieldRemoved: 'removed.field.bv',
+                fieldInit: 'init.field.bv',
+                fieldError: 'bv.field.error',
+                fieldSuccess: 'bv.field.success',
+                fieldStatus: 'status.field.bv',
+                validatorError: 'bv.validator.error',
+                validatorSuccess: 'success.validator.bv'
+            }
+        });
+
+        $([
+            '<form class="form-horizontal" id="eventForm4">',
+                '<div id="msg"></div>',
+                '<div class="form-group">',
+                    '<input type="text" name="email" data-bv-emailaddress />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#eventForm4')
+            .bootstrapValidator()
+            .on('success.field.bv', '[name="email"]', function(e, data) {
+                $('#msg').html('triggered success.field.bv on ' + data.field);
+            })
+            .on('error.field.bv', '[name="email"]', function(e, data) {
+                $('#msg').html('triggered error.field.bv on ' + data.field);
+            })
+            .on('bv.field.success', '[name="email"]', function(e, data) {
+                $('#msg').html('triggered bv.field.success on ' + data.field);
+            })
+            .on('bv.field.error', '[name="email"]', function(e, data) {
+                $('#msg').html('triggered bv.field.error on ' + data.field);
+            });
+
+        this.bv     = $('#eventForm4').data('bootstrapValidator');
+        this.$email = this.bv.getFieldElements('email');
+    });
+
+    afterEach(function() {
+        $('#eventForm4').bootstrapValidator('destroy').remove();
+    });
+
+    it('triggers success.field.bv', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validate();
+        expect($('#msg').html()).not.toEqual('triggered success.field.bv on email');
+    });
+
+    it('does not trigger bv.field.success', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('triggered bv.field.success on email');
+    });
+
+    it('does not trigger error.field.bv', function() {
+        this.$email.val('email@domain');
+        this.bv.validate();
+        expect($('#msg').html()).not.toEqual('triggered error.field.bv on email');
+    });
+
+    it('triggers bv.field.error', function() {
+        spyOn(window, 'onerror');
+
+        this.$email.val('email@domain');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('triggered bv.field.error on email');
+
+        expect(window.onerror).not.toHaveBeenCalled();
+    });
+});
+
+// ---
+// Validator events
+// ---
+
+function onEmailAddressValidatorSuccess(e, data) {
+    $('#msg').html(data.validator + ' validator passed');
+};
+
+function onEmailAddressValidatorError(e, data) {
+    $('#msg').html(data.validator + ' validator did not pass');
+};
+
+describe('event validator declarative', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="eventForm">',
+                '<div id="msg"></div>',
+                '<div class="form-group">',
+                    '<input type="text" name="email" data-bv-emailaddress data-bv-emailaddress-onsuccess="onEmailAddressValidatorSuccess" data-bv-emailaddress-onerror="onEmailAddressValidatorError" />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#eventForm').bootstrapValidator();
+
+        this.bv     = $('#eventForm').data('bootstrapValidator');
+        this.$email = this.bv.getFieldElements('email');
+    });
+
+    afterEach(function() {
+        $('#eventForm').bootstrapValidator('destroy').remove();
+    });
+
+    it('trigger data-bv-emailaddress-onsuccess', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('emailAddress validator passed');
+    });
+
+    it('trigger data-bv-emailaddress-onerror', function() {
+        this.$email.val('email@domain');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('emailAddress validator did not pass');
+    });
+});
+
+describe('event validator programmatically', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="eventForm">',
+                '<div id="msg"></div>',
+                '<div class="form-group">',
+                    '<input type="text" name="email" data-bv-emailaddress />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#eventForm').bootstrapValidator({
+            fields: {
+                email: {
+                    validators: {
+                        emailAddress: {
+                            onSuccess: function(e, data) {
+                                $('#msg').html('emailAddress validator: onSuccess() called');
+                            },
+                            onError: function(e, data) {
+                                $('#msg').html('emailAddress validator: onError() called');
+                            },
+                            message: 'The email address is not valid'
+                        }
+                    }
+                }
+            }
+        });
+
+        this.bv     = $('#eventForm').data('bootstrapValidator');
+        this.$email = this.bv.getFieldElements('email');
+    });
+
+    afterEach(function() {
+        $('#eventForm').bootstrapValidator('destroy').remove();
+    });
+
+    it('call onSuccess()', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('emailAddress validator: onSuccess() called');
+    });
+
+    it('call onError()', function() {
+        this.$email.val('email@domain');
+        this.bv.validate();
+        expect($('#msg').html()).toEqual('emailAddress validator: onError() called');
     });
 });
 
@@ -1462,6 +1843,12 @@ describe('between', function() {
         $('#betweenForm').bootstrapValidator('destroy').remove();
     });
 
+    it('not a number', function() {
+        this.$age.val('50abc');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+    });
+
     it('compare to value', function() {
         this.$age.val(10);
         this.bv.validate();
@@ -1557,21 +1944,20 @@ function validateCaptcha(value, validator, $field) {
 
 describe('callback', function() {
     beforeEach(function() {
-        $(['<div class="container">',
-                '<form class="form-horizontal" id="callbackForm">',
-                    '<div class="form-group">',
-                        '<label class="col-md-3 control-label" id="captchaOperation"></label>',
-                        '<div class="col-md-2">',
-                            '<input type="text" class="form-control" name="captcha" />',
-                        '</div>',
+        $([
+            '<form class="form-horizontal" id="callbackForm">',
+                '<div class="form-group">',
+                    '<label class="col-md-3 control-label" id="captchaOperation"></label>',
+                    '<div class="col-md-2">',
+                        '<input type="text" class="form-control" name="captcha" />',
                     '</div>',
-                    '<div class="form-group">',
-                        '<div class="col-md-2 col-md-offset-3">',
-                            '<input type="text" class="form-control" name="declarativeCaptcha" data-bv-callback data-bv-callback-callback="validateCaptcha" />',
-                        '</div>',
+                '</div>',
+                '<div class="form-group">',
+                    '<div class="col-md-2 col-md-offset-3">',
+                        '<input type="text" class="form-control" name="declarativeCaptcha" data-bv-callback data-bv-callback-callback="validateCaptcha" />',
                     '</div>',
-                '</form>',
-            '</div>'
+                '</div>',
+            '</form>'
         ].join('\n')).appendTo('body');
 
         $('#callbackForm').bootstrapValidator({
@@ -1595,7 +1981,7 @@ describe('callback', function() {
     });
 
     afterEach(function() {
-        $('#callbackForm').bootstrapValidator('destroy').parent().remove();
+        $('#callbackForm').bootstrapValidator('destroy').remove();
     });
 
     it('execute the callback', function() {
@@ -1748,7 +2134,7 @@ describe('creditCard', function() {
 });
 
 describe('date', function() {
-    beforeEach(function () {
+    beforeEach(function() {
         $([
             '<form class="form-horizontal" id="dateForm">',
                 '<div id="msg"></div>',
@@ -1764,7 +2150,7 @@ describe('date', function() {
         this.$date = this.bv.getFieldElements('date');
     });
 
-    afterEach(function () {
+    afterEach(function() {
         $('#dateForm').bootstrapValidator('destroy').remove();
     });
 
@@ -1803,8 +2189,24 @@ describe('date', function() {
         this.bv.validate();
         expect(this.bv.isValid()).toEqual(false);
 
+        // Negative number
+        this.bv.resetForm();
+        this.$date.val('-2000/10/20');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$date.val('2000/-10/20');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$date.val('2000/10/-20');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
         // Consist invalid characters
-        // #310
+        // Issue #310
         this.bv.resetForm();
         this.$date.val('aaaa/');
         this.bv.validate();
@@ -1815,7 +2217,7 @@ describe('date', function() {
         this.bv.validate();
         expect(this.bv.isValid()).toEqual(false);
 
-        // #475
+        // Issue #475
         this.bv.resetForm();
         this.$date.val('2014/09');
         this.bv.validate();
@@ -1871,6 +2273,53 @@ describe('date', function() {
         this.$date.val('2001/02/29');
         this.bv.validate();
         expect(this.bv.isValid()).toEqual(false);
+    });
+
+    // Issue #681
+    it('date, month, year are prefixed by zero', function() {
+        this.bv.updateOption('date', 'date', 'format', 'MM/DD/YYYY');
+
+        this.$date.val('0012/08/2014');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$date.val('12/0008/2014');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$date.val('12/08/002014');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$date.val('12/08/2014');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('hours, minutes, seconds are prefixed by zero', function() {
+        this.bv.updateOption('date', 'date', 'format', 'YYYY/MM/DD h:m:s');
+
+        this.$date.val('2014/08/17 0007:30:00');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$date.val('2014/08/17 07:030:00');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$date.val('2014/08/17 07:30:0000');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$date.val('2014/08/17 07:30:00');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
     });
 });
 
@@ -1965,6 +2414,12 @@ describe('greaterThan', function() {
 
     afterEach(function() {
         $('#greaterThanForm').bootstrapValidator('destroy').remove();
+    });
+
+    it('not a number', function() {
+        this.$age.val('20abc');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
     });
 
     it('compare to value', function() {
@@ -2766,7 +3221,7 @@ describe('id', function() {
         this.bv.updateOption('id', 'id', 'country', 'CL');
 
         // Valid samples
-        var validSamples = ['76086428-5', '22060449-7', '12531909-2'];
+        var validSamples = ['76086428-5', '22060449-7', '12531909-2','12937893-K','12937893-k'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$id.val(validSamples[i]);
@@ -3088,6 +3543,55 @@ describe('id', function() {
     });
 });
 
+describe('imo', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="imoForm">',
+                '<div class="form-group">',
+                    '<input type="text" name="imo" data-bv-imo />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#imoForm').bootstrapValidator();
+
+        this.bv   = $('#imoForm').data('bootstrapValidator');
+        this.$imo = this.bv.getFieldElements('imo');
+    });
+
+    afterEach(function() {
+        $('#imoForm').bootstrapValidator('destroy').remove();
+    });
+
+    it('Valid IMO (upper)', function() {
+        this.bv.resetForm();
+        this.$imo.val('IMO 9074729');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid IMO (lower)', function() {
+        this.bv.resetForm();
+        this.$imo.val('imo 9074729');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Invalid IMO (bad format)', function() {
+        this.bv.resetForm();
+        this.$imo.val('9074729');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeFalsy();
+    });
+
+    it('Invalid IMO (bad check digit)', function() {
+        this.bv.resetForm();
+        this.$imo.val('IMO 9074728');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeFalsy();
+    });
+});
+
 describe('isbn', function() {
     beforeEach(function() {
         var html = [
@@ -3370,6 +3874,12 @@ describe('lessThan', function() {
         $('#lessThanForm').bootstrapValidator('destroy').remove();
     });
 
+    it('not a number', function() {
+        this.$age.val('20abc');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+    });
+
     it('compare to value', function() {
         this.$age.val(120);
         this.bv.validate();
@@ -3440,6 +3950,298 @@ describe('lessThan', function() {
     });
 });
 
+describe('meid', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="meidForm">',
+                '<div class="form-group">',
+                    '<input type="text" name="meid" data-bv-meid />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#meidForm').bootstrapValidator();
+
+        this.bv    = $('#meidForm').data('bootstrapValidator');
+        this.$meid = this.bv.getFieldElements('meid');
+    });
+
+    afterEach(function() {
+        $('#meidForm').bootstrapValidator('destroy').remove();
+    });
+
+    it('Valid MEID (14 hex, check digit)', function() {
+        this.bv.resetForm();
+        this.$meid.val('A00000049259B16');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid MEID (14 hex, dashes, check digit)', function() {
+        this.bv.resetForm();
+        this.$meid.val('A0-000004-9259B1-6');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid MEID (14 hex, spaces, check digit)', function() {
+        this.bv.resetForm();
+        this.$meid.val('A0 000004 9259B1 6');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid MEID (18 dec, check digit)', function() {
+        this.bv.resetForm();
+        this.$meid.val('2936087365007037100');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid MEID (18 dec, dashes, check digit)', function() {
+        this.bv.resetForm();
+        this.$meid.val('29360-87365-0070-3710-0');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid MEID (18 dec, spaces, check digit)', function() {
+        this.bv.resetForm();
+        this.$meid.val('29360 87365 0070 3710 0');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid MEID (14 hex)', function() {
+        this.bv.resetForm();
+        this.$meid.val('AF0123450ABCDE');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid MEID (14 hex, dashes)', function() {
+        this.bv.resetForm();
+        this.$meid.val('AF-012345-0ABCDE');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid MEID (14 hex, spaces)', function() {
+        this.bv.resetForm();
+        this.$meid.val('AF 012345 0ABCDE');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid MEID (18 dec)', function() {
+        this.bv.resetForm();
+        this.$meid.val('293608736500703710');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid MEID (18 dec, dashes)', function() {
+        this.bv.resetForm();
+        this.$meid.val('29360-87365-0070-3710');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid MEID (18 dec, spaces)', function() {
+        this.bv.resetForm();
+        this.$meid.val('29360 87365 0070 3710');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Invalid MEID (14 hex, bad check digit)', function() {
+        this.bv.resetForm();
+        this.$meid.val('A00000049259B15');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeFalsy();
+    });
+
+    it('Invalid MEID (13 hex)', function() {
+        this.bv.resetForm();
+        this.$meid.val('A00000049259B');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeFalsy();
+    });
+
+    it('Invalid MEID (18 dec, bad check digit)', function() {
+        this.bv.resetForm();
+        this.$meid.val('2936087365007037101');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeFalsy();
+    });
+
+    it('Invalid MEID (17 dec)', function() {
+        this.bv.resetForm();
+        this.$meid.val('29360873650070371');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeFalsy();
+    });
+});
+
+describe('uri', function() {
+    beforeEach(function () {
+        $([
+            '<form class="form-horizontal" id="uriForm">',
+                '<div id="msg"></div>',
+                '<div class="form-group">',
+                    '<input type="text" name="uri" data-bv-uri />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#uriForm').bootstrapValidator();
+
+        this.bv   = $('#uriForm').data('bootstrapValidator');
+        this.$uri = this.bv.getFieldElements('uri');
+    });
+
+    afterEach(function () {
+        $('#uriForm').bootstrapValidator('destroy').remove();
+    });
+
+    var validGlobalURIs = [
+        'http://foo.com/blah_blah',
+        'http://foo.com/blah_blah',
+        'http://foo.com/blah_blah/',
+        'http://foo.com/blah_blah_(wikipedia)',
+        'http://foo.com/blah_blah_(wikipedia)_(again)',
+        'http://www.example.com/wpstyle/?p=364',
+        'https://www.example.com/foo/?bar=baz&inga=42&quux',
+        'http://✪df.ws/123',
+        'http://userid:password@example.com:8080',
+        'http://userid:password@example.com:8080/',
+        'http://userid@example.com',
+        'http://userid@example.com/',
+        'http://userid@example.com:8080',
+        'http://userid@example.com:8080/',
+        'http://userid:password@example.com',
+        'http://userid:password@example.com/',
+        'http://142.42.1.1/',
+        'http://142.42.1.1:8080/',
+        'http://➡.ws/䨹',
+        'http://⌘.ws',
+        'http://⌘.ws/',
+        'http://foo.com/blah_(wikipedia)#cite-1',
+        'http://foo.com/blah_(wikipedia)_blah#cite-1',
+        'http://foo.com/unicode_(✪)_in_parens',
+        'http://foo.com/(something)?after=parens',
+        'http://☺.damowmow.com/',
+        'http://code.google.com/events/#&product=browser',
+        'http://j.mp',
+        'ftp://foo.bar/baz',
+        'http://foo.bar/?q=Test%20URL-encoded%20stuff',
+        'http://مثال.إختبار',
+        'http://例子.测试',
+        'http://उदाहरण.परीक्षा',
+        "http://-.~_!$&'()*+,;=:%40:80%2f::::::@example.com",
+        'http://1337.net',
+        'http://a.b-c.de',
+        'http://223.255.255.254'
+    ];
+
+    var invalidGlobalURIs = [
+        'http://',
+        'http://.',
+        'http://..',
+        'http://../',
+        'http://?',
+        'http://??',
+        'http://??/',
+        'http://#',
+        'http://##',
+        'http://##/',
+        'http://foo.bar?q=Spaces should be encoded',
+        '//',
+        '//a',
+        '///a',
+        '///',
+        'http:///a',
+        'foo.com',
+        'rdar://1234',
+        'h://test',
+        'http:// shouldfail.com',
+        ':// should fail',
+        'http://foo.bar/foo(bar)baz quux',
+        'ftps://foo.bar/',
+        'http://-error-.invalid/',
+        'http://a.b--c.de/',
+        'http://-a.b.co',
+        'http://a.b-.co',
+        'http://.www.foo.bar/',
+        'http://www.foo.bar./',
+        'http://.www.foo.bar./'
+    ];
+
+    var localURIs = [
+        'http://intranetsite',
+        'http://intranetsite/test',
+        'http://intranetsite:80',
+        'http://intranetsite:80/test',
+        'http://user:pass@intranetsite',
+        'http://user:pass@intranetsite/test',
+        'http://user:pass@intranetsite:80',
+        'http://user:pass@intranetsite:80/test',
+        'http://10.1.1.0',
+        'http://10.1.1.255',
+        'http://10.1.1.1',
+        'http://10.1.1.254',
+        'http://127.0.0.1',
+        'http://192.168.0.1',
+        'http://0.0.0.0',
+        'http://224.1.1.1',
+        'http://1.1.1.1.1',
+        'http://123.123.123',
+        'http://3628126748'
+    ];
+
+    it('Valid URIs (allowLocal=false)', function() {
+        var me = this;
+        $.each(validGlobalURIs, function(index, uri) {
+            me.bv.resetForm();
+            me.$uri.val(uri);
+            me.bv.validate();
+            expect(me.bv.isValid()).toBeTruthy();
+        });
+    });
+
+    it('Invalid URIs (allowLocal=false)', function() {
+        var me = this;
+        $.each(invalidGlobalURIs.concat(localURIs), function(index, uri) {
+            me.bv.resetForm();
+            me.$uri.val(uri);
+            me.bv.validate();
+            expect(me.bv.isValid()).toEqual(false);
+        });
+    });
+
+    it('Valid URIs (allowLocal=true)', function() {
+        var me = this;
+        me.bv.updateOption('uri', 'uri', 'allowLocal', true);
+        $.each(validGlobalURIs.concat(localURIs), function(index, uri) {
+            me.bv.resetForm();
+            me.$uri.val(uri);
+            me.bv.validate();
+            expect(me.bv.isValid()).toBeTruthy();
+        });
+    });
+
+    it('Invalid URIs (allowLocal=true)', function() {
+        var me = this;
+        me.bv.updateOption('uri', 'uri', 'allowLocal', true);
+        $.each(invalidGlobalURIs, function(index, uri) {
+            me.bv.resetForm();
+            me.$uri.val(uri);
+            me.bv.validate();
+            expect(me.bv.isValid()).toEqual(false);
+        });
+    });
+});
+
 describe('vat', function() {
     beforeEach(function() {
         $([
@@ -3460,6 +4262,7 @@ describe('vat', function() {
                         '<option value="GR">Greece</option>',
                         '<option value="HU">Hungary</option>',
                         '<option value="IE">Ireland</option>',
+                        '<option value="IS">Iceland</option>',
                         '<option value="IT">Italy</option>',
                         '<option value="LV">Latvia</option>',
                         '<option value="LT">Lithuania</option>',
@@ -3478,6 +4281,7 @@ describe('vat', function() {
                         '<option value="SE">Sweden</option>',
                         '<option value="CH">Switzerland</option>',
                         '<option value="GB">United Kingdom</option>',
+                        '<option value="ZA">South Africa</option>',
                     '</select>',
                 '</div>',
                 '<div class="form-group">',
@@ -3523,7 +4327,7 @@ describe('vat', function() {
         expect(this.bv.isValid()).toEqual(false);
     });
 
-    it('Austrian VAT number', function () {
+    it('Austrian VAT number', function() {
         // Valid samples
         var validSamples = ['ATU13585627'];
         for (var i in validSamples) {
@@ -3543,7 +4347,7 @@ describe('vat', function() {
         }
     });
 
-    it('Belgian VAT number', function () {
+    it('Belgian VAT number', function() {
         // Valid samples
         var validSamples = ['BE0428759497'];
         for (var i in validSamples) {
@@ -3563,7 +4367,7 @@ describe('vat', function() {
         }
     });
 
-    it('Bulgarian VAT number', function () {
+    it('Bulgarian VAT number', function() {
         // Valid samples
         var validSamples = ['BG175074752', 'BG7523169263', 'BG8032056031', 'BG7542011030', 'BG7111042925'];
         for (var i in validSamples) {
@@ -3583,7 +4387,7 @@ describe('vat', function() {
         }
     });
 
-    it('Cypriot VAT number', function () {
+    it('Cypriot VAT number', function() {
         // Valid samples
         var validSamples = ['CY10259033P'];
         for (var i in validSamples) {
@@ -3603,7 +4407,7 @@ describe('vat', function() {
         }
     });
 
-    it('Czech Republic VAT number', function () {
+    it('Czech Republic VAT number', function() {
         // Valid samples
         var validSamples = ['CZ25123891', 'CZ7103192745', 'CZ991231123', 'CZ640903926'];
         for (var i in validSamples) {
@@ -3623,7 +4427,7 @@ describe('vat', function() {
         }
     });
 
-    it('German VAT number', function () {
+    it('German VAT number', function() {
         // Valid samples
         var validSamples = ['DE136695976'];
         for (var i in validSamples) {
@@ -3643,7 +4447,7 @@ describe('vat', function() {
         }
     });
 
-    it('Danish VAT number', function () {
+    it('Danish VAT number', function() {
         // Valid samples
         var validSamples = ['DK13585628'];
         for (var i in validSamples) {
@@ -3663,7 +4467,7 @@ describe('vat', function() {
         }
     });
 
-    it('Estonian VAT number', function () {
+    it('Estonian VAT number', function() {
         // Valid samples
         var validSamples = ['EE100931558', 'EE100594102'];
         for (var i in validSamples) {
@@ -3683,7 +4487,7 @@ describe('vat', function() {
         }
     });
 
-    it('Spanish VAT number (NIF)', function () {
+    it('Spanish VAT number (NIF)', function() {
         // Valid samples
         var validSamples = ['ES54362315K', 'ESX2482300W', 'ESX5253868R', 'ESM1234567L', 'ESJ99216582', 'ESB58378431', 'ESB64717838'];
         for (var i in validSamples) {
@@ -3703,7 +4507,7 @@ describe('vat', function() {
         }
     });
 
-    it('Finnish VAT number', function () {
+    it('Finnish VAT number', function() {
         // Valid samples
         var validSamples = ['FI20774740'];
         for (var i in validSamples) {
@@ -3723,7 +4527,7 @@ describe('vat', function() {
         }
     });
 
-    it('French VAT number (TVA)', function () {
+    it('French VAT number (TVA)', function() {
         // Valid samples
         var validSamples = ['FR40303265045', 'FR23334175221', 'FRK7399859412', 'FR4Z123456782'];
         for (var i in validSamples) {
@@ -3743,7 +4547,7 @@ describe('vat', function() {
         }
     });
 
-    it('United Kingdom VAT number', function () {
+    it('United Kingdom VAT number', function() {
         // Valid samples
         var validSamples = ['GB980780684'];
         for (var i in validSamples) {
@@ -3763,7 +4567,7 @@ describe('vat', function() {
         }
     });
 
-    it('Greek VAT number', function () {
+    it('Greek VAT number', function() {
         // Valid samples
         var validSamples = ['GR023456780', 'EL094259216'];
         for (var i in validSamples) {
@@ -3783,7 +4587,7 @@ describe('vat', function() {
         }
     });
 
-    it('Hungarian VAT number', function () {
+    it('Hungarian VAT number', function() {
         // Valid samples
         var validSamples = ['HU12892312'];
         for (var i in validSamples) {
@@ -3803,7 +4607,7 @@ describe('vat', function() {
         }
     });
 
-    it('Croatian VAT number', function () {
+    it('Croatian VAT number', function() {
         // Valid samples
         var validSamples = ['HR33392005961'];
         for (var i in validSamples) {
@@ -3823,7 +4627,7 @@ describe('vat', function() {
         }
     });
 
-    it('Irish VAT number', function () {
+    it('Irish VAT number', function() {
         // Valid samples
         var validSamples = ['IE6433435F', 'IE6433435OA', 'IE8D79739I'];
         for (var i in validSamples) {
@@ -3843,7 +4647,27 @@ describe('vat', function() {
         }
     });
 
-    it('Italian VAT number', function () {
+    it('Iceland VAT (VSK) number', function() {
+        // Valid samples
+        var validSamples = ['IS11111', 'IS111111'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$vat.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['IS1234567', 'IS123456ABC'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$vat.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Italian VAT number', function() {
         // Valid samples
         var validSamples = ['IT00743110157'];
         for (var i in validSamples) {
@@ -3863,7 +4687,7 @@ describe('vat', function() {
         }
     });
 
-    it('Lithuanian VAT number', function () {
+    it('Lithuanian VAT number', function() {
         // Valid samples
         var validSamples = ['LT119511515', 'LT100001919017', 'LT100004801610'];
         for (var i in validSamples) {
@@ -3883,7 +4707,7 @@ describe('vat', function() {
         }
     });
 
-    it('Luxembourg VAT number', function () {
+    it('Luxembourg VAT number', function() {
         // Valid samples
         var validSamples = ['LU15027442'];
         for (var i in validSamples) {
@@ -3903,7 +4727,7 @@ describe('vat', function() {
         }
     });
 
-    it('Latvian VAT number', function () {
+    it('Latvian VAT number', function() {
         // Valid samples
         var validSamples = ['LV40003521600', 'LV16117519997'];
         for (var i in validSamples) {
@@ -3923,7 +4747,7 @@ describe('vat', function() {
         }
     });
 
-    it('Maltese VAT number', function () {
+    it('Maltese VAT number', function() {
         // Valid samples
         var validSamples = ['MT11679112'];
         for (var i in validSamples) {
@@ -3943,7 +4767,7 @@ describe('vat', function() {
         }
     });
 
-    it('Dutch VAT number', function () {
+    it('Dutch VAT number', function() {
         // Valid samples
         var validSamples = ['NL004495445B01'];
         for (var i in validSamples) {
@@ -3963,7 +4787,7 @@ describe('vat', function() {
         }
     });
 
-    it('Polish VAT number', function () {
+    it('Polish VAT number', function() {
         // Valid samples
         var validSamples = ['PL8567346215'];
         for (var i in validSamples) {
@@ -3983,7 +4807,7 @@ describe('vat', function() {
         }
     });
 
-    it('Portuguese VAT number', function () {
+    it('Portuguese VAT number', function() {
         // Valid samples
         var validSamples = ['PT501964843'];
         for (var i in validSamples) {
@@ -4003,7 +4827,7 @@ describe('vat', function() {
         }
     });
 
-    it('Romanian VAT number', function () {
+    it('Romanian VAT number', function() {
         // Valid samples
         var validSamples = ['RO18547290'];
         for (var i in validSamples) {
@@ -4023,7 +4847,7 @@ describe('vat', function() {
         }
     });
 
-    it('Swedish VAT number', function () {
+    it('Swedish VAT number', function() {
         // Valid samples
         var validSamples = ['SE123456789701'];
         for (var i in validSamples) {
@@ -4043,7 +4867,7 @@ describe('vat', function() {
         }
     });
 
-    it('Slovenian VAT number', function () {
+    it('Slovenian VAT number', function() {
         // Valid samples
         var validSamples = ['SI50223054'];
         for (var i in validSamples) {
@@ -4063,7 +4887,7 @@ describe('vat', function() {
         }
     });
 
-    it('Slovak VAT number', function () {
+    it('Slovak VAT number', function() {
         // Valid samples
         var validSamples = ['SK2022749619'];
         for (var i in validSamples) {
@@ -4075,6 +4899,26 @@ describe('vat', function() {
 
         // Invalid samples
         var invalidSamples = ['SK2022749618'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$vat.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('South African VAT number', function() {
+        // Valid samples
+        var validSamples = ['ZA4012345678'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$vat.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['ZA40123456789', 'ZA0123456789'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4273,5 +5117,19 @@ describe('zipCode', function() {
         this.bv.validate();
         expect($('#msg').html()).toEqual('getCountryCode() called');
         expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('not supported country code', function() {
+        this.$zipCode.attr('data-bv-zipcode-country', 'NOT_SUPPORTED');
+
+        $('#zipCodeForm').bootstrapValidator('destroy');
+
+        this.bv = $('#zipCodeForm').bootstrapValidator().data('bootstrapValidator');
+
+        this.bv.resetForm();
+        this.$zipCode.val('1234');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        expect(this.bv.getMessages(this.$zipCode, 'zipCode')[0]).toEqual($.fn.bootstrapValidator.helpers.format($.fn.bootstrapValidator.i18n.zipCode.countryNotSupported, 'NOT_SUPPORTED'));
     });
 });

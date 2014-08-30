@@ -18,6 +18,7 @@ describe('vat', function() {
                         '<option value="GR">Greece</option>',
                         '<option value="HU">Hungary</option>',
                         '<option value="IE">Ireland</option>',
+                        '<option value="IS">Iceland</option>',
                         '<option value="IT">Italy</option>',
                         '<option value="LV">Latvia</option>',
                         '<option value="LT">Lithuania</option>',
@@ -36,6 +37,7 @@ describe('vat', function() {
                         '<option value="SE">Sweden</option>',
                         '<option value="CH">Switzerland</option>',
                         '<option value="GB">United Kingdom</option>',
+                        '<option value="ZA">South Africa</option>',
                     '</select>',
                 '</div>',
                 '<div class="form-group">',
@@ -81,7 +83,7 @@ describe('vat', function() {
         expect(this.bv.isValid()).toEqual(false);
     });
 
-    it('Austrian VAT number', function () {
+    it('Austrian VAT number', function() {
         // Valid samples
         var validSamples = ['ATU13585627'];
         for (var i in validSamples) {
@@ -101,7 +103,7 @@ describe('vat', function() {
         }
     });
 
-    it('Belgian VAT number', function () {
+    it('Belgian VAT number', function() {
         // Valid samples
         var validSamples = ['BE0428759497'];
         for (var i in validSamples) {
@@ -121,7 +123,7 @@ describe('vat', function() {
         }
     });
 
-    it('Bulgarian VAT number', function () {
+    it('Bulgarian VAT number', function() {
         // Valid samples
         var validSamples = ['BG175074752', 'BG7523169263', 'BG8032056031', 'BG7542011030', 'BG7111042925'];
         for (var i in validSamples) {
@@ -141,7 +143,7 @@ describe('vat', function() {
         }
     });
 
-    it('Cypriot VAT number', function () {
+    it('Cypriot VAT number', function() {
         // Valid samples
         var validSamples = ['CY10259033P'];
         for (var i in validSamples) {
@@ -161,7 +163,7 @@ describe('vat', function() {
         }
     });
 
-    it('Czech Republic VAT number', function () {
+    it('Czech Republic VAT number', function() {
         // Valid samples
         var validSamples = ['CZ25123891', 'CZ7103192745', 'CZ991231123', 'CZ640903926'];
         for (var i in validSamples) {
@@ -181,7 +183,7 @@ describe('vat', function() {
         }
     });
 
-    it('German VAT number', function () {
+    it('German VAT number', function() {
         // Valid samples
         var validSamples = ['DE136695976'];
         for (var i in validSamples) {
@@ -201,7 +203,7 @@ describe('vat', function() {
         }
     });
 
-    it('Danish VAT number', function () {
+    it('Danish VAT number', function() {
         // Valid samples
         var validSamples = ['DK13585628'];
         for (var i in validSamples) {
@@ -221,7 +223,7 @@ describe('vat', function() {
         }
     });
 
-    it('Estonian VAT number', function () {
+    it('Estonian VAT number', function() {
         // Valid samples
         var validSamples = ['EE100931558', 'EE100594102'];
         for (var i in validSamples) {
@@ -241,7 +243,7 @@ describe('vat', function() {
         }
     });
 
-    it('Spanish VAT number (NIF)', function () {
+    it('Spanish VAT number (NIF)', function() {
         // Valid samples
         var validSamples = ['ES54362315K', 'ESX2482300W', 'ESX5253868R', 'ESM1234567L', 'ESJ99216582', 'ESB58378431', 'ESB64717838'];
         for (var i in validSamples) {
@@ -261,7 +263,7 @@ describe('vat', function() {
         }
     });
 
-    it('Finnish VAT number', function () {
+    it('Finnish VAT number', function() {
         // Valid samples
         var validSamples = ['FI20774740'];
         for (var i in validSamples) {
@@ -281,7 +283,7 @@ describe('vat', function() {
         }
     });
 
-    it('French VAT number (TVA)', function () {
+    it('French VAT number (TVA)', function() {
         // Valid samples
         var validSamples = ['FR40303265045', 'FR23334175221', 'FRK7399859412', 'FR4Z123456782'];
         for (var i in validSamples) {
@@ -301,7 +303,7 @@ describe('vat', function() {
         }
     });
 
-    it('United Kingdom VAT number', function () {
+    it('United Kingdom VAT number', function() {
         // Valid samples
         var validSamples = ['GB980780684'];
         for (var i in validSamples) {
@@ -321,7 +323,7 @@ describe('vat', function() {
         }
     });
 
-    it('Greek VAT number', function () {
+    it('Greek VAT number', function() {
         // Valid samples
         var validSamples = ['GR023456780', 'EL094259216'];
         for (var i in validSamples) {
@@ -341,7 +343,7 @@ describe('vat', function() {
         }
     });
 
-    it('Hungarian VAT number', function () {
+    it('Hungarian VAT number', function() {
         // Valid samples
         var validSamples = ['HU12892312'];
         for (var i in validSamples) {
@@ -361,7 +363,7 @@ describe('vat', function() {
         }
     });
 
-    it('Croatian VAT number', function () {
+    it('Croatian VAT number', function() {
         // Valid samples
         var validSamples = ['HR33392005961'];
         for (var i in validSamples) {
@@ -381,7 +383,7 @@ describe('vat', function() {
         }
     });
 
-    it('Irish VAT number', function () {
+    it('Irish VAT number', function() {
         // Valid samples
         var validSamples = ['IE6433435F', 'IE6433435OA', 'IE8D79739I'];
         for (var i in validSamples) {
@@ -401,7 +403,27 @@ describe('vat', function() {
         }
     });
 
-    it('Italian VAT number', function () {
+    it('Iceland VAT (VSK) number', function() {
+        // Valid samples
+        var validSamples = ['IS11111', 'IS111111'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$vat.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['IS1234567', 'IS123456ABC'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$vat.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Italian VAT number', function() {
         // Valid samples
         var validSamples = ['IT00743110157'];
         for (var i in validSamples) {
@@ -421,7 +443,7 @@ describe('vat', function() {
         }
     });
 
-    it('Lithuanian VAT number', function () {
+    it('Lithuanian VAT number', function() {
         // Valid samples
         var validSamples = ['LT119511515', 'LT100001919017', 'LT100004801610'];
         for (var i in validSamples) {
@@ -441,7 +463,7 @@ describe('vat', function() {
         }
     });
 
-    it('Luxembourg VAT number', function () {
+    it('Luxembourg VAT number', function() {
         // Valid samples
         var validSamples = ['LU15027442'];
         for (var i in validSamples) {
@@ -461,7 +483,7 @@ describe('vat', function() {
         }
     });
 
-    it('Latvian VAT number', function () {
+    it('Latvian VAT number', function() {
         // Valid samples
         var validSamples = ['LV40003521600', 'LV16117519997'];
         for (var i in validSamples) {
@@ -481,7 +503,7 @@ describe('vat', function() {
         }
     });
 
-    it('Maltese VAT number', function () {
+    it('Maltese VAT number', function() {
         // Valid samples
         var validSamples = ['MT11679112'];
         for (var i in validSamples) {
@@ -501,7 +523,7 @@ describe('vat', function() {
         }
     });
 
-    it('Dutch VAT number', function () {
+    it('Dutch VAT number', function() {
         // Valid samples
         var validSamples = ['NL004495445B01'];
         for (var i in validSamples) {
@@ -521,7 +543,7 @@ describe('vat', function() {
         }
     });
 
-    it('Polish VAT number', function () {
+    it('Polish VAT number', function() {
         // Valid samples
         var validSamples = ['PL8567346215'];
         for (var i in validSamples) {
@@ -541,7 +563,7 @@ describe('vat', function() {
         }
     });
 
-    it('Portuguese VAT number', function () {
+    it('Portuguese VAT number', function() {
         // Valid samples
         var validSamples = ['PT501964843'];
         for (var i in validSamples) {
@@ -561,7 +583,7 @@ describe('vat', function() {
         }
     });
 
-    it('Romanian VAT number', function () {
+    it('Romanian VAT number', function() {
         // Valid samples
         var validSamples = ['RO18547290'];
         for (var i in validSamples) {
@@ -581,7 +603,7 @@ describe('vat', function() {
         }
     });
 
-    it('Swedish VAT number', function () {
+    it('Swedish VAT number', function() {
         // Valid samples
         var validSamples = ['SE123456789701'];
         for (var i in validSamples) {
@@ -601,7 +623,7 @@ describe('vat', function() {
         }
     });
 
-    it('Slovenian VAT number', function () {
+    it('Slovenian VAT number', function() {
         // Valid samples
         var validSamples = ['SI50223054'];
         for (var i in validSamples) {
@@ -621,7 +643,7 @@ describe('vat', function() {
         }
     });
 
-    it('Slovak VAT number', function () {
+    it('Slovak VAT number', function() {
         // Valid samples
         var validSamples = ['SK2022749619'];
         for (var i in validSamples) {
@@ -633,6 +655,26 @@ describe('vat', function() {
 
         // Invalid samples
         var invalidSamples = ['SK2022749618'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$vat.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('South African VAT number', function() {
+        // Valid samples
+        var validSamples = ['ZA4012345678'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$vat.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['ZA40123456789', 'ZA0123456789'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);

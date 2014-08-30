@@ -1,6 +1,61 @@
 # Change Log
 
-## v0.5.0 (not released yet) - It will be the big release
+## v0.5.1 (2014-08-22)
+
+__New features__
+
+* [#218](https://github.com/nghuuphuoc/bootstrapvalidator/issues/218), [#531](https://github.com/nghuuphuoc/bootstrapvalidator/pull/531): Add meid validator, thanks to [@troymccabe](https://github.com/troymccabe)
+* [#267](https://github.com/nghuuphuoc/bootstrapvalidator/issues/267), [#532](https://github.com/nghuuphuoc/bootstrapvalidator/pull/532): Add imo validator, thanks to [@troymccabe](https://github.com/troymccabe)
+* [#510](https://github.com/nghuuphuoc/bootstrapvalidator/pull/510), [#646](https://github.com/nghuuphuoc/bootstrapvalidator/pull/646): Add French [phone number](http://bootstrapvalidator.com/validators/phone/) validator, thanks to [@dlucazeau](https://github.com/dlucazeau)
+* [#536](https://github.com/nghuuphuoc/bootstrapvalidator/pull/536): Add Spanish [phone number](http://bootstrapvalidator.com/validators/phone/) validator, thanks to [@vadail](https://github.com/vadail)
+* [#519](https://github.com/nghuuphuoc/bootstrapvalidator/pull/519): Add Iceland [VAT](http://bootstrapvalidator.com/validators/vat/) number validator, thanks to [@evilchili](https://github.com/evilchili)
+* [#620](https://github.com/nghuuphuoc/bootstrapvalidator/issues/620), [#621](https://github.com/nghuuphuoc/bootstrapvalidator/pull/621): Add Pakistan [phone number](http://bootstrapvalidator.com/validators/phone/) validator, thanks to [@abuzer](https://github.com/abuzer)
+* [#630](https://github.com/nghuuphuoc/bootstrapvalidator/issues/630), [#640](https://github.com/nghuuphuoc/bootstrapvalidator/pull/640): Add event name options to avoid window.onerror being invoked by jQuery, thanks to [@roryprimrose](https://github.com/roryprimrose). Thanks to [@stephengreentree](https://github.com/stephengreentree) for creating the test suite ([#657](https://github.com/nghuuphuoc/bootstrapvalidator/pull/657))
+* [#637](https://github.com/nghuuphuoc/bootstrapvalidator/pull/637): Add South African [VAT](http://bootstrapvalidator.com/validators/vat/) number validator, thanks to [@evilchili](https://github.com/evilchili)
+* [#638](https://github.com/nghuuphuoc/bootstrapvalidator/pull/638), [#647](https://github.com/nghuuphuoc/bootstrapvalidator/pull/647): Add Brazilian [phone number](http://bootstrapvalidator.com/validators/phone/) and [postal code](http://bootstrapvalidator.com/validators/zipCode/) validator, thanks to [@fhferreira](https://github.com/fhferreira)
+* [#643](https://github.com/nghuuphuoc/bootstrapvalidator/pull/643): Add [zipCode](http://bootstrapvalidator.com/validators/zipCode/) and [phone number](http://bootstrapvalidator.com/validators/phone/) validators for Morocco, thanks to [@Arkni](https://github.com/Arkni)
+* [#650](https://github.com/nghuuphuoc/bootstrapvalidator/pull/650): Add Brazilian [VAT](http://bootstrapvalidator.com/validators/vat/) number validator, thanks to [@fhferreira](https://github.com/fhferreira)
+
+__Improvements__
+
+* [#502](https://github.com/nghuuphuoc/bootstrapvalidator/pull/502): Allowing sites without TLD to pass URI validation, thanks to [@troymccabe](https://github.com/troymccabe)
+* [#549](https://github.com/nghuuphuoc/bootstrapvalidator/pull/549), [#600](https://github.com/nghuuphuoc/bootstrapvalidator/pull/600): Change the CSS/JS path in ```demo/remote.html``` and ```demo/message.html```, thanks to [@leegtang](https://github.com/leegtang), [@Arkni](https://github.com/Arkni)
+* [#604](https://github.com/nghuuphuoc/bootstrapvalidator/pull/604): Fix the ```demo/date.html``` and ```demo/tab.html``` examples, thanks to [@Arkni](https://github.com/Arkni)
+* [#609](https://github.com/nghuuphuoc/bootstrapvalidator/pull/609): Add content-type header for ```demo/remote.php```, thanks to [@etorres](https://github.com/etorres)
+* [#661](https://github.com/nghuuphuoc/bootstrapvalidator/pull/661): Add ```headers``` option to the [remote](http://bootstrapvalidator.com/validators/remote/) validator, thanks to [@ryan2049](https://github.com/ryan2049)
+* [#664](https://github.com/nghuuphuoc/bootstrapvalidator/issues/664): Fix the feedback icon position for Bootstrap 3.2
+* [#683](https://github.com/nghuuphuoc/bootstrapvalidator/issues/683): Force the format option to be ```YYYY-MM-DD``` when using ```<input type="date" />```
+* [#698](https://github.com/nghuuphuoc/bootstrapvalidator/issues/698): Ignore type checking if the file type is empty
+
+__Bug Fixes__
+
+* [#284](https://github.com/nghuuphuoc/bootstrapvalidator/issues/284), [#294](https://github.com/nghuuphuoc/bootstrapvalidator/issues/294), [#441](https://github.com/nghuuphuoc/bootstrapvalidator/issues/441), [#516](https://github.com/nghuuphuoc/bootstrapvalidator/issues/516): The HTML 5 ```<input type="number" />``` input allows to input non-digits characters
+* [#548](https://github.com/nghuuphuoc/bootstrapvalidator/issues/548): Fix the issue when using [different](http://bootstrapvalidator.com/validators/different/) validator to compare with not existing field
+* [#550](https://github.com/nghuuphuoc/bootstrapvalidator/issues/550), [#551](https://github.com/nghuuphuoc/bootstrapvalidator/pull/551): Cannot validate against both ipv4 and ipv6 at the same time, thanks to [@beeglebug](https://github.com/beeglebug)
+* [#588](https://github.com/nghuuphuoc/bootstrapvalidator/issues/588): Don't use min, max attributes (greaterThan, lessThan validators) for ```<input type="date" />```
+* [#665](https://github.com/nghuuphuoc/bootstrapvalidator/issues/665): The [submitButtons](http://bootstrapvalidator.com/settings/#form-submit-buttons) option doesn't work correctly
+* [#672](https://github.com/nghuuphuoc/bootstrapvalidator/issues/672): The [zipCode](http://bootstrapvalidator.com/validators/zipCode/) validator throw an exception when passing not supported country code
+* [#681](https://github.com/nghuuphuoc/bootstrapvalidator/issues/681): Fix the [date](http://bootstrapvalidator.com/validators/date/) validator issue where one of date/month/year or hours/minutes/seconds is prefixed by zero
+* [#692](https://github.com/nghuuphuoc/bootstrapvalidator/issues/692): The [remote](http://bootstrapvalidator.com/validators/remote/) validator can't set the type option via HTML attribute
+* [#700](https://github.com/nghuuphuoc/bootstrapvalidator/issues/700): The [between](http://bootstrapvalidator.com/validators/between/), [greaterThan](http://bootstrapvalidator.com/validators/greaterThan/), [lessThan](http://bootstrapvalidator.com/validators/lessThan/) validators accept param which isn't number
+
+__Language Packages__
+
+* [#400](https://github.com/nghuuphuoc/bootstrapvalidator/pull/400): Italian language package, thanks to [@maramazza](https://github.com/maramazza)
+* [#503](https://github.com/nghuuphuoc/bootstrapvalidator/pull/503): French language package, thanks to [@dlucazeau](https://github.com/dlucazeau)
+* [#505](https://github.com/nghuuphuoc/bootstrapvalidator/pull/505): Czech language package, thanks to [@AdwinTrave](https://github.com/AdwinTrave)
+* [#507](https://github.com/nghuuphuoc/bootstrapvalidator/pull/507): Polish language package, thanks to [@grzesiek](https://github.com/grzesiek). [#624](https://github.com/nghuuphuoc/bootstrapvalidator/pull/624): Typos fixed by [@lukaszbanasiak](https://github.com/lukaszbanasiak)
+* [#517](https://github.com/nghuuphuoc/bootstrapvalidator/pull/517): Belgium (Dutch) language package, thanks to [@dokterpasta](https://github.com/dokterpasta)
+* [#527](https://github.com/nghuuphuoc/bootstrapvalidator/pull/527): Bulgarian language package, thanks to [@mraiur](https://github.com/mraiur)
+* [#534](https://github.com/nghuuphuoc/bootstrapvalidator/pull/534): Turkish language package, thanks to [@CeRBeR666](https://github.com/CeRBeR666)
+* [#536](https://github.com/nghuuphuoc/bootstrapvalidator/pull/536): Spanish language package, thanks to [@vadail](https://github.com/vadail)
+* [#544](https://github.com/nghuuphuoc/bootstrapvalidator/pull/544): Greek language package, thanks to [@pRieStaKos](https://github.com/pRieStaKos)
+* [#545](https://github.com/nghuuphuoc/bootstrapvalidator/pull/545): Portuguese (Brazil) language package, thanks to [@marcuscarvalho6](https://github.com/marcuscarvalho6)
+* [#598](https://github.com/nghuuphuoc/bootstrapvalidator/pull/598): Danish language package, thanks to [@Djarnis](https://github.com/Djarnis)
+* [#674](https://github.com/nghuuphuoc/bootstrapvalidator/pull/674), [#677](https://github.com/nghuuphuoc/bootstrapvalidator/pull/677): Dutch language package, thanks to [@jvanderheide](https://github.com/jvanderheide)
+* [#679](https://github.com/nghuuphuoc/bootstrapvalidator/pull/679): Add Arabic language package, thanks to [@Arkni](https://github.com/Arkni)
+
+## v0.5.0 (2015-07-14)
 
 __New Features__
 * [#2](https://github.com/nghuuphuoc/bootstrapvalidator/issues/2), [#387](https://github.com/nghuuphuoc/bootstrapvalidator/issues/387): Provide the default error messages
@@ -31,6 +86,34 @@ __Changes__
 * [#42](https://github.com/nghuuphuoc/bootstrapvalidator/issues/42): Remove the submit button from ```submitHandler()```. You can use new ```getSubmitButton()``` method to get the clicked submit button
 * [#109](https://github.com/nghuuphuoc/bootstrapvalidator/issues/109): Remove the ```setLiveMode()``` method
 * ```$.fn.bootstrapValidator.helpers``` renames ```mod_11_10``` to ```mod11And10```, ```mod_37_36``` to ```mod37And36```
+* Remove ```submitHandler()``` option. Use ```success.form.bv``` event instead:
+
+_v0.4.5 and earlier versions_
+```javascript
+$(form).bootstrapValidator({
+    submitHandler: function(form, validator, submitButton) {
+        ...
+    }
+});
+```
+
+_v0.5.0_
+Using ```success.form.bv``` event:
+
+```javascript
+$(form)
+    .bootstrapValidator(options)
+    .on('success.form.bv', function(e) {
+        // Prevent form submission
+        e.preventDefault();
+
+        var $form        = $(e.target),
+            validator    = $form.data('bootstrapValidator'),
+            submitButton = validator.getSubmitButton();
+
+        // Do whatever you want here ...
+    });
+```
 
 __Improvements__
 * [#244](https://github.com/nghuuphuoc/bootstrapvalidator/pull/244): Only enable the submit buttons if all fields are valid, thanks to [@smeagol74](https://github.com/smeagol74)
@@ -77,6 +160,8 @@ __Bug Fixes__
 * [#417](https://github.com/nghuuphuoc/bootstrapvalidator/issues/417): IPv6 validator doesn't work
 * [#425](https://github.com/nghuuphuoc/bootstrapvalidator/issues/425): Custom trigger event is ignored by field validators
 * [#447](https://github.com/nghuuphuoc/bootstrapvalidator/pull/447): Skip the ```_isExcluded()``` when initializing the form. This fixes [#269](https://github.com/nghuuphuoc/bootstrapvalidator/issues/269), [#273](https://github.com/nghuuphuoc/bootstrapvalidator/issues/273). Thanks to [@AlaskanShade](https://github.com/AlaskanShade)
+* [#483](https://github.com/nghuuphuoc/bootstrapvalidator/issues/483), [#487](https://github.com/nghuuphuoc/bootstrapvalidator/pull/487): Added the letters 'W' and 'Z' in the second and third letter list for Canada postal code, thanks to [@jzhang6](https://github.com/jzhang6)
+* [#492](https://github.com/nghuuphuoc/bootstrapvalidator/issues/492), [#493](https://github.com/nghuuphuoc/bootstrapvalidator/pull/493): Fixed Chilean ID (RUT/RUN) finished in 'K' or 'k', thanks to [@marceloampuerop6](https://github.com/marceloampuerop6)
 
 __Document__
 * [#259](https://github.com/nghuuphuoc/bootstrapvalidator/issues/259): Typo "Support almost Bootstrap forms", thanks to [@lloydde](https://github.com/lloydde)
@@ -86,6 +171,12 @@ __Document__
 * [#334](https://github.com/nghuuphuoc/bootstrapvalidator/pull/334): No ID is specified on the form object for registration, thanks to [@jjshoe](https://github.com/jjshoe)
 * [#423](https://github.com/nghuuphuoc/bootstrapvalidator/pull/423): Add default column to settings table, thanks to [@MartinDevillers](https://github.com/MartinDevillers)
 * [#452](https://github.com/nghuuphuoc/bootstrapvalidator/pull/452): Update 'United State' to 'United States', thanks to [@mike1e](https://github.com/mike1e)
+
+__Language Packages__
+* [#396](https://github.com/nghuuphuoc/bootstrapvalidator/pull/396): German language package, thanks to [@logemann](https://github.com/logemann)
+* [#474](https://github.com/nghuuphuoc/bootstrapvalidator/pull/474): Hungarian language package, thanks to [@blackfyre](https://github.com/blackfyre)
+* [#478](https://github.com/nghuuphuoc/bootstrapvalidator/pull/478): Simplified and traditional Chinese language package, thanks to [@tureki](https://github.com/tureki)
+* [#494](https://github.com/nghuuphuoc/bootstrapvalidator/pull/494): Chilean Spanish language package, thanks to [@marceloampuerop6](https://github.com/marceloampuerop6)
 
 ## v0.4.5 (2014-05-15)
 

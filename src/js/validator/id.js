@@ -70,7 +70,7 @@
                 country = value.substr(0, 2);
             } else if (typeof country !== 'string' || $.inArray(country.toUpperCase(), this.COUNTRY_CODES) === -1) {
                 // Determine the country code
-                country = validator.getDynamicOption(country, $field);
+                country = validator.getDynamicOption($field, country);
             }
 
             if ($.inArray(country, this.COUNTRY_CODES) === -1) {
@@ -293,10 +293,10 @@
          * @returns {Boolean}
          */
         _cl: function(value) {
-            if (!/^\d{7,8}[-]{0,1}[0-9K]$/.test(value)) {
+            if (!/^\d{7,8}[-]{0,1}[0-9K]$/i.test(value)) {
                 return false;
             }
-            value = value.replace(/\D/g, '');
+            value = value.replace(/\-/g, '');
             while (value.length < 9) {
                 value = '0' + value;
             }
@@ -311,7 +311,7 @@
             } else if (sum === 10) {
                 sum = 'K';
             }
-            return sum + '' === value.charAt(8);
+            return sum + '' === value.charAt(8).toUpperCase();
         },
 
         /**

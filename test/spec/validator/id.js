@@ -129,7 +129,7 @@ describe('id', function() {
         this.bv.updateOption('id', 'id', 'country', 'CL');
 
         // Valid samples
-        var validSamples = ['76086428-5', '22060449-7', '12531909-2'];
+        var validSamples = ['76086428-5', '22060449-7', '12531909-2','12937893-K','12937893-k'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$id.val(validSamples[i]);
