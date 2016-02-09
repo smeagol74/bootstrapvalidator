@@ -69,7 +69,7 @@
             NO: 'Norway',
             PK: 'Pakistan',
             PL: 'Poland',
-            PS: 'Palestinian',
+            PS: 'Palestine',
             PT: 'Portugal',
             QA: 'Qatar',
             RO: 'Romania',

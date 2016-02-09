@@ -8,7 +8,19 @@
             message: 'message',
             name: 'name',
             type: 'type',
-            url: 'url'
+            url: 'url',
+            data: 'data',
+            delay: 'delay'
+        },
+
+        /**
+         * Destroy the timer when destroying the bootstrapValidator (using validator.destroy() method)
+         */
+        destroy: function(validator, $field, options) {
+            if ($field.data('bv.remote.timer')) {
+                clearTimeout($field.data('bv.remote.timer'));
+                $field.removeData('bv.remote.timer');
+            }
         },
 
         /**
@@ -23,26 +35,34 @@
          *  {
          *      <fieldName>: <fieldValue>
          *  }
+         * - delay
          * - name {String} [optional]: Override the field name for the request.
          * - message: The invalid message
          * - headers: Additional headers
-         * @returns {Boolean|Deferred}
+         * @returns {Deferred}
          */
         validate: function(validator, $field, options) {
-            var value = $field.val();
+            var value = $field.val(),
+                dfd   = new $.Deferred();
             if (value === '') {
-                return true;
+                dfd.resolve($field, 'remote', { valid: true });
+                return dfd;
             }
 
             var name    = $field.attr('data-bv-field'),
                 data    = options.data || {},
                 url     = options.url,
-                type    = options.type || 'POST',
+                type    = options.type || 'GET',
                 headers = options.headers || {};
 
             // Support dynamic data
             if ('function' === typeof data) {
                 data = data.call(this, validator);
+            }
+
+            // Parse string data from HTML5 attribute
+            if ('string' === typeof data) {
+                data = JSON.parse(data);
             }
 
             // Support dynamic url
@@ -51,24 +71,38 @@
             }
 
             data[options.name || name] = value;
+            function runCallback() {
+                var xhr = $.ajax({
+                    type: type,
+                    headers: headers,
+                    url: url,
+                    dataType: 'json',
+                    data: data
+                });
+                xhr.then(function(response) {
+                    response.valid = response.valid === true || response.valid === 'true';
+                    dfd.resolve($field, 'remote', response);
+                });
 
-            var dfd = new $.Deferred();
-            var xhr = $.ajax({
-                type: type,
-                headers: headers,
-                url: url,
-                dataType: 'json',
-                data: data
-            });
-            xhr.then(function(response) {
-                dfd.resolve($field, 'remote', response.valid === true || response.valid === 'true', response.message ? response.message : null);
-            });
+                dfd.fail(function() {
+                    xhr.abort();
+                });
 
-            dfd.fail(function() {
-                xhr.abort();
-            });
+                return dfd;
+            }
+            
+            if (options.delay) {
+                // Since the form might have multiple fields with the same name
+                // I have to attach the timer to the field element
+                if ($field.data('bv.remote.timer')) {
+                    clearTimeout($field.data('bv.remote.timer'));
+                }
 
-            return dfd;
+                $field.data('bv.remote.timer', setTimeout(runCallback, options.delay));
+                return dfd;
+            } else {
+                return runCallback();
+            }
         }
     };
 }(window.jQuery));

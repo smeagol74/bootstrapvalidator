@@ -5,7 +5,7 @@
      */
     $.fn.bootstrapValidator.i18n = $.extend(true, $.fn.bootstrapValidator.i18n, {
         base64: {
-            'default': 'Please enter a valid base 64 encoded'
+            'default': 'Si prega di inserire un valore codificato in Base 64'
         },
         between: {
             'default': 'Si prega di inserire un valore tra %s e %s',
@@ -20,6 +20,9 @@
             more: 'Si prega di scegliere al massimo l\'opzione %s',
             between: 'Si prega di scegliere l\'opzione tra %s e %s'
         },
+        color: {
+            'default': 'Si prega di inserire un colore valido'
+        },
         creditCard: {
             'default': 'Si prega di inserire un numero di carta di credito valido'
         },
@@ -30,7 +33,10 @@
             'default': 'Si prega di inserire un numero CVV valido'
         },
         date: {
-            'default': 'Si prega di inserire una data valida'
+            'default': 'Si prega di inserire una data valida',
+            min: 'Si prega di inserire una data successiva al %s',
+            max: 'Si prega di inserire una data antecedente il %s',
+            range: 'Si prega di inserire una data compresa tra %s - %s'
         },
         different: {
             'default': 'Si prega di inserire un valore differente'
@@ -63,7 +69,7 @@
         iban: {
             'default': 'Si prega di inserire un numero IBAN valido',
             countryNotSupported: 'Il codice del paese %s non e supportato',
-            country: 'Si prega di inserire un numero IBAN valido in %s',
+            country: 'Si prega di inserire un numero IBAN valido per %s',
             countries: {
                 AD: 'Andorra',
                 AE: 'Emirati Arabi Uniti',
@@ -149,33 +155,35 @@
         id: {
             'default': 'Si prega di inserire un numero di identificazione valido',
             countryNotSupported: 'Il codice nazione %s non e supportato',
-            country: 'Si prega di inserire un numero di identificazione %s valido',
+            country: 'Si prega di inserire un numero di identificazione valido per %s',
             countries: {
                 BA: 'Bosnia-Erzegovina',
                 BG: 'Bulgaria',
-                BR: 'Brasiliano',
-                CH: 'Svizzero',
-                CL: 'Cileno',
-                CZ: 'Ceco',
-                DK: 'Danese',
-                EE: 'Estonian',
-                ES: 'Spagnolo',
-                FI: 'Finlandese',
-                HR: 'Croato',
-                IE: 'Irlandese',
-                IS: 'Islandese',
-                LT: 'Lituano',
-                LV: 'Lettone',
+                BR: 'Brasile',
+                CH: 'Svizzera',
+                CL: 'Chile',
+                CN: 'Cina',
+                CZ: 'Republica Ceca',
+                DK: 'Danimarca',
+                EE: 'Estonia',
+                ES: 'Spagna',
+                FI: 'Finlandia',
+                HR: 'Croazia',
+                IE: 'Irlanda',
+                IS: 'Islanda',
+                LT: 'Lituania',
+                LV: 'Lettonia',
                 ME: 'Montenegro',
-                MK: 'Macedone',
-                NL: 'Olandese',
-                RO: 'Rumeno',
-                RS: 'Serbo',
-                SE: 'Svedese',
-                SI: 'Sloveno',
-                SK: 'Slovacco',
+                MK: 'Macedonia',
+                NL: 'Paesi Bassi',
+                RO: 'Romania',
+                RS: 'Serbia',
+                SE: 'Svezia',
+                SI: 'Slovenia',
+                SK: 'Slovacchia',
                 SM: 'San Marino',
-                ZA: 'Sud Africano'
+                TH: 'Thailandia',
+                ZA: 'Sudafrica'
             }
         },
         identical: {
@@ -226,15 +234,24 @@
         phone: {
             'default': 'Si prega di inserire un numero di telefono valido',
             countryNotSupported: 'Il codice nazione %s non e supportato',
-            country: 'Si prega di inserire un numero di telefono valido in %s',
+            country: 'Si prega di inserire un numero di telefono valido per %s',
             countries: {
                 BR: 'Brasile',
+                CN: 'Cina',
+                CZ: 'Republica Ceca',
+                DE: 'Germania',
+                DK: 'Danimarca',
                 ES: 'Spagna',
                 FR: 'Francia',
                 GB: 'Regno Unito',
                 MA: 'Marocco',
                 PK: 'Pakistan',
-                US: 'Stati Uniti d\'America'
+                RO: 'Romania',
+                RU: 'Russia',
+                SK: 'Slovacchia',
+                TH: 'Thailandia',
+                US: 'Stati Uniti d\'America',
+                VE: 'Venezuelano'
             }
         },
         regexp: {
@@ -286,7 +303,7 @@
                 BR: 'Brasiliano',
                 CH: 'Svizzera',
                 CY: 'Cipro',
-                CZ: 'Repubblica Ceca',
+                CZ: 'Republica Ceca',
                 DE: 'Germania',
                 DK: 'Danimarca',
                 EE: 'Estonia',
@@ -315,6 +332,7 @@
                 SE: 'Svezia',
                 SI: 'Slovenia',
                 SK: 'Slovacchia',
+                VE: 'Venezuelano',
                 ZA: 'Sud Africano'
             }
         },
@@ -322,20 +340,30 @@
             'default': 'Si prega di inserire un numero VIN valido'
         },
         zipCode: {
-            'default': 'Si prega di inserire un CAP valido',
+            'default': 'Si prega di inserire un codice postale valido',
             countryNotSupported: 'Il codice nazione %s non e supportato',
-            country: 'Si prega di inserire un valido  %s',
+            country: 'Si prega di inserire un codice postale valido per %s',
             countries: {
-                BR: 'Codice postale Brasiliano',
-                CA: 'Codice postale Canadese',
-                DK: 'Codice postale Danese',
-                GB: 'Codice postale del Regno Unito',
-                IT: 'Codice postale Italiano',
-                MA: 'Codice postale Marocco',
-                NL: 'Codice postale Olandese',
-                SE: 'Codice postale Svizzero',
-                SG: 'Codice postale di Singapore',
-                US: 'Codice postale US'
+                AT: 'Austria',
+                BR: 'Brasile',
+                CA: 'Canada',
+                CH: 'Svizzera',
+                CZ: 'Republica Ceca',
+                DE: 'Germania',
+                DK: 'Danimarca',
+                FR: 'Francia',
+                GB: 'Regno Unito',
+                IE: 'Irlanda',
+                IT: 'Italia',
+                MA: 'Marocco',
+                NL: 'Paesi Bassi',
+                PT: 'Portogallo',
+                RO: 'Romania',
+                RU: 'Russia',
+                SE: 'Svezia',
+                SG: 'Singapore',
+                SK: 'Slovacchia',
+                US: 'Stati Uniti d\'America'
             }
         }
     });

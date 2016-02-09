@@ -2,44 +2,45 @@
     $.fn.bootstrapValidator.i18n.vat = $.extend($.fn.bootstrapValidator.i18n.vat || {}, {
         'default': 'Please enter a valid VAT number',
         countryNotSupported: 'The country code %s is not supported',
-        country: 'Please enter a valid %s VAT number',
+        country: 'Please enter a valid VAT number in %s',
         countries: {
-            AT: 'Austrian',
-            BE: 'Belgian',
-            BG: 'Bulgarian',
-            BR: 'Brazilian',
-            CH: 'Swiss',
-            CY: 'Cypriot',
-            CZ: 'Czech',
-            DE: 'German',
-            DK: 'Danish',
-            EE: 'Estonian',
-            ES: 'Spanish',
-            FI: 'Finnish',
-            FR: 'French',
+            AT: 'Austria',
+            BE: 'Belgium',
+            BG: 'Bulgaria',
+            BR: 'Brazil',
+            CH: 'Switzerland',
+            CY: 'Cyprus',
+            CZ: 'Czech Republic',
+            DE: 'Germany',
+            DK: 'Denmark',
+            EE: 'Estonia',
+            ES: 'Spain',
+            FI: 'Finland',
+            FR: 'France',
             GB: 'United Kingdom',
             GR: 'Greek',
             EL: 'Greek',
-            HU: 'Hungarian',
-            HR: 'Croatian',
-            IE: 'Irish',
+            HU: 'Hungary',
+            HR: 'Croatia',
+            IE: 'Ireland',
             IS: 'Iceland',
-            IT: 'Italian',
-            LT: 'Lithuanian',
+            IT: 'Italy',
+            LT: 'Lithuania',
             LU: 'Luxembourg',
-            LV: 'Latvian',
-            MT: 'Maltese',
-            NL: 'Dutch',
-            NO: 'Norwegian',
-            PL: 'Polish',
-            PT: 'Portuguese',
-            RO: 'Romanian',
-            RU: 'Russian',
-            RS: 'Serbian',
-            SE: 'Swedish',
-            SI: 'Slovenian',
-            SK: 'Slovak',
-            ZA: 'South African'
+            LV: 'Latvia',
+            MT: 'Malta',
+            NL: 'Netherlands',
+            NO: 'Norway',
+            PL: 'Poland',
+            PT: 'Portugal',
+            RO: 'Romania',
+            RU: 'Russia',
+            RS: 'Serbia',
+            SE: 'Sweden',
+            SI: 'Slovenia',
+            SK: 'Slovakia',
+            VE: 'Venezuela',
+            ZA: 'South Africa'
         }
     });
 
@@ -52,7 +53,8 @@
         // Supported country codes
         COUNTRY_CODES: [
             'AT', 'BE', 'BG', 'BR', 'CH', 'CY', 'CZ', 'DE', 'DK', 'EE', 'EL', 'ES', 'FI', 'FR', 'GB', 'GR', 'HR', 'HU',
-            'IE', 'IS', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'RU', 'RS', 'SE', 'SK', 'SI', 'ZA'
+            'IE', 'IS', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'RU', 'RS', 'SE', 'SK', 'SI', 'VE',
+            'ZA'
         ],
 
         /**
@@ -111,15 +113,17 @@
          * @returns {Boolean}
          */
         _at: function(value) {
-            if (!/^ATU[0-9]{8}$/.test(value)) {
+            if (/^ATU[0-9]{8}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^U[0-9]{8}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(3);
+            value = value.substr(1);
             var sum    = 0,
                 weight = [1, 2, 1, 2, 1, 2, 1],
                 temp   = 0;
-
             for (var i = 0; i < 7; i++) {
                 temp = parseInt(value.charAt(i), 10) * weight[i];
                 if (temp > 9) {
@@ -146,15 +150,16 @@
          * @returns {Boolean}
          */
         _be: function(value) {
-            if (!/^BE[0]{0,1}[0-9]{9}$/.test(value)) {
+            if (/^BE[0]{0,1}[0-9]{9}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0]{0,1}[0-9]{9}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             if (value.length === 9) {
                 value = '0' + value;
             }
-
             if (value.substr(1, 1) === '0') {
                 return false;
             }
@@ -176,11 +181,13 @@
          * @returns {Boolean}
          */
         _bg: function(value) {
-            if (!/^BG[0-9]{9,10}$/.test(value)) {
+            if (/^BG[0-9]{9,10}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{9,10}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var sum = 0, i = 0;
 
             // Legal entities
@@ -323,11 +330,14 @@
          * @returns {Boolean}
          */
         _ch: function(value) {
-            if (!/^CHE[0-9]{9}(MWST)?$/.test(value)) {
+            if (/^CHE[0-9]{9}(MWST)?$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^E[0-9]{9}(MWST)?$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(3);
+            value = value.substr(1);
             var sum    = 0,
                 weight = [5, 4, 3, 2, 7, 6, 5, 4];
             for (var i = 0; i < 8; i++) {
@@ -355,11 +365,12 @@
          * @returns {Boolean}
          */
         _cy: function(value) {
-            if (!/^CY[0-5|9]{1}[0-9]{7}[A-Z]{1}$/.test(value)) {
+            if (/^CY[0-5|9]{1}[0-9]{7}[A-Z]{1}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-5|9]{1}[0-9]{7}[A-Z]{1}$/.test(value)) {
                 return false;
             }
-
-            value = value.substr(2);
 
             // Do not allow to start with "12"
             if (value.substr(0, 2) === '12') {
@@ -399,11 +410,12 @@
          * @returns {Boolean}
          */
         _cz: function(value) {
-            if (!/^CZ[0-9]{8,10}$/.test(value)) {
+            if (/^CZ[0-9]{8,10}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{8,10}$/.test(value)) {
                 return false;
             }
-
-            value = value.substr(2);
 
             var sum = 0,
                 i   = 0;
@@ -486,11 +498,13 @@
          * @returns {Boolean}
          */
         _de: function(value) {
-            if (!/^DE[0-9]{9}$/.test(value)) {
+            if (/^DE[0-9]{9}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{9}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             return $.fn.bootstrapValidator.helpers.mod11And10(value);
         },
 
@@ -504,11 +518,13 @@
          * @returns {Boolean}
          */
         _dk: function(value) {
-            if (!/^DK[0-9]{8}$/.test(value)) {
+            if (/^DK[0-9]{8}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{8}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var sum    = 0,
                 weight = [2, 7, 6, 5, 4, 3, 2, 1];
             for (var i = 0; i < 8; i++) {
@@ -528,14 +544,15 @@
          * @returns {Boolean}
          */
         _ee: function(value) {
-            if (!/^EE[0-9]{9}$/.test(value)) {
+            if (/^EE[0-9]{9}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{9}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var sum    = 0,
                 weight = [3, 7, 1, 3, 7, 1, 3, 7, 1];
-
             for (var i = 0; i < 9; i++) {
                 sum += parseInt(value.charAt(i), 10) * weight[i];
             }
@@ -558,11 +575,13 @@
          * @returns {Boolean}
          */
         _es: function(value) {
-            if (!/^ES[0-9A-Z][0-9]{7}[0-9A-Z]$/.test(value)) {
+            if (/^ES[0-9A-Z][0-9]{7}[0-9A-Z]$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9A-Z][0-9]{7}[0-9A-Z]$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var dni = function(value) {
                     var check = parseInt(value.substr(0, 8), 10);
                     check = 'TRWAGMYFPDXBNJZSQVHLCKE'[check % 23];
@@ -622,14 +641,15 @@
          * @returns {Boolean}
          */
         _fi: function(value) {
-            if (!/^FI[0-9]{8}$/.test(value)) {
+            if (/^FI[0-9]{8}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{8}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var sum    = 0,
                 weight = [7, 9, 10, 5, 8, 4, 2, 1];
-
             for (var i = 0; i < 8; i++) {
                 sum += parseInt(value.charAt(i), 10) * weight[i];
             }
@@ -649,11 +669,12 @@
          * @returns {Boolean}
          */
         _fr: function(value) {
-            if (!/^FR[0-9A-Z]{2}[0-9]{9}$/.test(value)) {
+            if (/^FR[0-9A-Z]{2}[0-9]{9}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9A-Z]{2}[0-9]{9}$/.test(value)) {
                 return false;
             }
-
-            value = value.substr(2);
 
             if (!$.fn.bootstrapValidator.helpers.luhn(value.substr(2))) {
                 return false;
@@ -686,16 +707,23 @@
          * @returns {Boolean}
          */
         _gb: function(value) {
-            if (!/^GB[0-9]{9}$/.test(value)             /* Standard */
-                && !/^GB[0-9]{12}$/.test(value)         /* Branches */
-                && !/^GBGD[0-9]{3}$/.test(value)        /* Government department */
-                && !/^GBHA[0-9]{3}$/.test(value)        /* Health authority */
-                && !/^GB(GD|HA)8888[0-9]{5}$/.test(value))
+            if (/^GB[0-9]{9}$/.test(value)             /* Standard */
+                || /^GB[0-9]{12}$/.test(value)         /* Branches */
+                || /^GBGD[0-9]{3}$/.test(value)        /* Government department */
+                || /^GBHA[0-9]{3}$/.test(value)        /* Health authority */
+                || /^GB(GD|HA)8888[0-9]{5}$/.test(value))
+            {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{9}$/.test(value)
+                && !/^[0-9]{12}$/.test(value)
+                && !/^GD[0-9]{3}$/.test(value)
+                && !/^HA[0-9]{3}$/.test(value)
+                && !/^(GD|HA)8888[0-9]{5}$/.test(value))
             {
                 return false;
             }
 
-            value = value.substr(2);
             var length = value.length;
             if (length === 5) {
                 var firstTwo  = value.substr(0, 2),
@@ -736,11 +764,13 @@
          * @returns {Boolean}
          */
         _gr: function(value) {
-            if (!/^GR[0-9]{9}$/.test(value)) {
+            if (/^(GR|EL)[0-9]{9}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{9}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             if (value.length === 8) {
                 value = '0' + value;
             }
@@ -757,11 +787,6 @@
 
         // EL is traditionally prefix of Greek VAT numbers
         _el: function(value) {
-            if (!/^EL[0-9]{9}$/.test(value)) {
-                return false;
-            }
-
-            value = 'GR' + value.substr(2);
             return this._gr(value);
         },
 
@@ -775,11 +800,13 @@
          * @returns {Boolean}
          */
         _hu: function(value) {
-            if (!/^HU[0-9]{8}$/.test(value)) {
+            if (/^HU[0-9]{8}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{8}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var sum    = 0,
                 weight = [9, 7, 3, 1, 9, 7, 3, 1];
 
@@ -800,11 +827,13 @@
          * @returns {Boolean}
          */
         _hr: function(value) {
-            if (!/^HR[0-9]{11}$/.test(value)) {
+            if (/^HR[0-9]{11}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{11}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             return $.fn.bootstrapValidator.helpers.mod11And10(value);
         },
 
@@ -818,11 +847,13 @@
          * @returns {Boolean}
          */
         _ie: function(value) {
-            if (!/^IE[0-9]{1}[0-9A-Z\*\+]{1}[0-9]{5}[A-Z]{1,2}$/.test(value)) {
+            if (/^IE[0-9]{1}[0-9A-Z\*\+]{1}[0-9]{5}[A-Z]{1,2}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{1}[0-9A-Z\*\+]{1}[0-9]{5}[A-Z]{1,2}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var getCheckDigit = function(value) {
                 while (value.length < 7) {
                     value = '0' + value;
@@ -858,7 +889,10 @@
          * @returns {Boolean}
          */
         _is: function(value) {
-            return /^IS\d{5,6}$/.test(value);
+            if (/^IS[0-9]{5,6}$/.test(value)) {
+                value = value.substr(2);
+            }
+            return /^[0-9]{5,6}$/.test(value);
         },
 
         /**
@@ -875,11 +909,13 @@
          * @returns {Boolean}
          */
         _it: function(value) {
-            if (!/^IT[0-9]{11}$/.test(value)) {
+            if (/^IT[0-9]{11}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{11}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             if (parseInt(value.substr(0, 7), 10) === 0) {
                 return false;
             }
@@ -906,11 +942,13 @@
          * @returns {Boolean}
          */
         _lt: function(value) {
-            if (!/^LT([0-9]{7}1[0-9]{1}|[0-9]{10}1[0-9]{1})$/.test(value)) {
+            if (/^LT([0-9]{7}1[0-9]{1}|[0-9]{10}1[0-9]{1})$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^([0-9]{7}1[0-9]{1}|[0-9]{10}1[0-9]{1})$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var length = value.length,
                 sum    = 0,
                 i;
@@ -938,11 +976,13 @@
          * @returns {Boolean}
          */
         _lu: function(value) {
-            if (!/^LU[0-9]{8}$/.test(value)) {
+            if (/^LU[0-9]{8}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{8}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             return ((parseInt(value.substr(0, 6), 10) % 89) + '' === value.substr(6, 2));
         },
 
@@ -956,11 +996,13 @@
          * @returns {Boolean}
          */
         _lv: function(value) {
-            if (!/^LV[0-9]{11}$/.test(value)) {
+            if (/^LV[0-9]{11}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{11}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var first  = parseInt(value.charAt(0), 10),
                 sum    = 0,
                 weight = [],
@@ -1007,11 +1049,13 @@
          * @returns {Boolean}
          */
         _mt: function(value) {
-            if (!/^MT[0-9]{8}$/.test(value)) {
+            if (/^MT[0-9]{8}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{8}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var sum    = 0,
                 weight = [3, 4, 6, 7, 8, 9, 10, 1];
 
@@ -1032,10 +1076,13 @@
          * @returns {Boolean}
          */
         _nl: function(value) {
-            if (!/^NL[0-9]{9}B[0-9]{2}$/.test(value)) {
+            if (/^NL[0-9]{9}B[0-9]{2}$/.test(value)) {
+               value = value.substr(2);
+            }
+            if (!/^[0-9]{9}B[0-9]{2}$/.test(value)) {
                return false;
             }
-            value = value.substr(2);
+
             var sum    = 0,
                 weight = [9, 8, 7, 6, 5, 4, 3, 2];
             for (var i = 0; i < 8; i++) {
@@ -1057,10 +1104,13 @@
          * @returns {Boolean}
          */
         _no: function(value) {
-            if (!/^NO[0-9]{9}$/.test(value)) {
+            if (/^NO[0-9]{9}$/.test(value)) {
+               value = value.substr(2);
+            }
+            if (!/^[0-9]{9}$/.test(value)) {
                return false;
             }
-            value = value.substr(2);
+
             var sum    = 0,
                 weight = [3, 2, 7, 6, 5, 4, 3, 2];
             for (var i = 0; i < 8; i++) {
@@ -1084,11 +1134,13 @@
          * @returns {Boolean}
          */
         _pl: function(value) {
-            if (!/^PL[0-9]{10}$/.test(value)) {
+            if (/^PL[0-9]{10}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{10}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var sum    = 0,
                 weight = [6, 5, 7, 2, 3, 4, 5, 6, 7, -1];
 
@@ -1109,11 +1161,13 @@
          * @returns {Boolean}
          */
         _pt: function(value) {
-            if (!/^PT[0-9]{9}$/.test(value)) {
+            if (/^PT[0-9]{9}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{9}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var sum    = 0,
                 weight = [9, 8, 7, 6, 5, 4, 3, 2];
 
@@ -1137,10 +1191,12 @@
          * @returns {Boolean}
          */
         _ro: function(value) {
-            if (!/^RO[1-9][0-9]{1,9}$/.test(value)) {
+            if (/^RO[1-9][0-9]{1,9}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[1-9][0-9]{1,9}$/.test(value)) {
                 return false;
             }
-            value = value.substr(2);
 
             var length = value.length,
                 weight = [7, 5, 3, 2, 1, 7, 5, 3, 2].slice(10 - length),
@@ -1160,11 +1216,13 @@
          * @returns {Boolean}
          */
         _ru: function(value) {
-            if (!/^RU([0-9]{9}|[0-9]{12})$/.test(value)) {
+            if (/^RU([0-9]{10}|[0-9]{12})$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^([0-9]{10}|[0-9]{12})$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var i = 0;
             if (value.length === 10) {
                 var sum    = 0,
@@ -1210,11 +1268,13 @@
          * @returns {Boolean}
          */
         _rs: function(value) {
-            if (!/^RS[0-9]{9}$/.test(value)) {
+            if (/^RS[0-9]{9}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{9}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var sum  = 10,
                 temp = 0;
             for (var i = 0; i < 8; i++) {
@@ -1238,11 +1298,14 @@
          * @returns {Boolean}
          */
         _se: function(value) {
-            if (!/^SE[0-9]{10}01$/.test(value)) {
+            if (/^SE[0-9]{10}01$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{10}01$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2, 10);
+            value = value.substr(0, 10);
             return $.fn.bootstrapValidator.helpers.luhn(value);
         },
 
@@ -1256,11 +1319,13 @@
          * @returns {Boolean}
          */
         _si: function(value) {
-            if (!/^SI[0-9]{8}$/.test(value)) {
+            if (/^SI[0-9]{8}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[0-9]{8}$/.test(value)) {
                 return false;
             }
 
-            value = value.substr(2);
             var sum    = 0,
                 weight = [8, 7, 6, 5, 4, 3, 2];
 
@@ -1284,11 +1349,52 @@
          * @returns {Boolean}
          */
         _sk: function(value) {
-            if (!/^SK[1-9][0-9][(2-4)|(6-9)][0-9]{7}$/.test(value)) {
+            if (/^SK[1-9][0-9][(2-4)|(6-9)][0-9]{7}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[1-9][0-9][(2-4)|(6-9)][0-9]{7}$/.test(value)) {
                 return false;
             }
 
-            return (parseInt(value.substr(2), 10) % 11 === 0);
+            return (parseInt(value, 10) % 11 === 0);
+        },
+
+        /**
+         * Validate Venezuelan VAT number (RIF)
+         * Examples:
+         * - Valid: VEJ309272292, VEV242818101, VEJ000126518, VEJ000458324, J309272292, V242818101, J000126518, J000458324
+         * - Invalid: VEJ309272293, VEV242818100, J000126519, J000458323
+         *
+         * @param {String} value VAT number
+         * @returns {Boolean}
+         */
+        _ve: function(value) {
+            if (/^VE[VEJPG][0-9]{9}$/.test(value)) {
+                value = value.substr(2);
+            }
+            if (!/^[VEJPG][0-9]{9}$/.test(value)) {
+                return false;
+            }
+
+            var types  = {
+                    'V': 4,
+                    'E': 8,
+                    'J': 12,
+                    'P': 16,
+                    'G': 20
+                },
+                sum    = types[value.charAt(0)],
+                weight = [3, 2, 7, 6, 5, 4, 3, 2];
+
+            for (var i = 0; i < 8; i++) {
+                sum += parseInt(value.charAt(i + 1), 10) * weight[i];
+            }
+
+            sum = 11 - sum % 11;
+            if (sum === 11 || sum === 10) {
+                sum = 0;
+            }
+            return (sum + '' === value.substr(9, 1));
         },
 
         /**
@@ -1301,7 +1407,11 @@
          * @returns {Boolean}
          */
          _za: function(value) {
-            return /^ZA4\d{9}$/.test(value);
+            if (/^ZA4[0-9]{9}$/.test(value)) {
+                value = value.substr(2);
+            }
+
+            return /^4[0-9]{9}$/.test(value);
         }
     };
 }(window.jQuery));

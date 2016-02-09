@@ -17,6 +17,9 @@ describe('api', function() {
                 '<div class="form-group">',
                     '<input type="text" name="email" data-bv-notempty data-bv-emailaddress />',
                 '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="note"/>',
+                '</div>',
             '</form>'
         ].join('\n')).appendTo('body');
 
@@ -24,6 +27,7 @@ describe('api', function() {
 
         this.bv     = $('#apiForm').data('bootstrapValidator');
         this.$email = this.bv.getFieldElements('email');
+        this.$note  = $('#apiForm').find('input[name="note"]');
     });
 
     afterEach(function() {
@@ -62,6 +66,114 @@ describe('api', function() {
         expect(this.bv.getOptions('username', 'stringLength')).toBeDefined();
         expect(this.bv.getOptions('username', 'stringLength', 'min')).toEqual('8');
         expect(this.bv.getOptions('username', 'stringlength', 'max')).toBeNull();
+    });
+
+    // #1014
+    it('isValidField()', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validate();
+        expect(this.bv.isValidField(this.$note)).toBeTruthy();
+        expect(this.bv.isValidField(this.$email)).toBeTruthy();
+    });
+
+    // #1014
+    it('validateField()', function() {
+        this.$email.val('email@domain.com');
+        this.bv.validateField(this.$email);
+        this.bv.validateField(this.$note);
+        expect(this.bv.isValidField(this.$email)).toBeTruthy();
+        expect(this.bv.isValidField(this.$note)).toBeTruthy();
+    });
+});
+
+describe('autoFocus', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="autoFocusForm">',
+                '<div class="form-group">',
+                    '<input type="text" name="username" required />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="email" required data-bv-emailaddress />',
+                '</div>',
+                '<div class="form-group">',
+                    '<button type="submit" id="submitButton">Submit</button>',
+                '</div>',
+            '</form>'
+        ].join('')).appendTo('body');
+
+        this.bv        = $('#autoFocusForm')
+                            .bootstrapValidator()
+                            .submit(function(e) {
+                                e.preventDefault();
+                            })
+                            .data('bootstrapValidator');
+        this.$username = this.bv.getFieldElements('username');
+        this.$email    = this.bv.getFieldElements('email');
+    });
+
+    afterEach(function() {
+        $('#autoFocusForm').bootstrapValidator('destroy').remove();
+    });
+
+    it('default option (autoFocus=true)', function() {
+        $('#submitButton').click();
+        expect(this.$username.is(':focus')).toBeTruthy();
+        expect($(document.activeElement).attr('name')).toEqual('username');
+
+        this.bv.resetForm();
+        this.$username.val('user_name');
+        this.$email.val('');
+        $('#submitButton').click();
+        expect(this.$email.is(':focus')).toBeTruthy();
+        expect($(document.activeElement).attr('name')).toEqual('email');
+    });
+
+    it('set autoFocus=false for form', function() {
+        $('#autoFocusForm')
+                .bootstrapValidator('destroy')
+                .bootstrapValidator({
+                    autoFocus: false
+                });
+        this.$username.val('');
+        this.$email.val('invalid#email');
+        $('#submitButton').click();
+
+        expect(this.$username.is(':focus')).toBeFalsy();
+        expect(this.$email.is(':focus')).toBeFalsy();
+    });
+
+    it('set autoFocus=false for all fields', function() {
+        this.bv
+            .addField('username', {
+                autoFocus: false
+            })
+            .addField('email', {
+                autoFocus: false
+            });
+        this.$username.val('user_name');
+        this.$email.val('invalid#email');
+        $('#submitButton').click();
+
+        expect(this.$username.is(':focus')).toBeFalsy();
+        expect(this.$email.is(':focus')).toBeFalsy();
+    });
+
+    it('set different autoFocus value for fields', function() {
+        this.bv
+            .addField('username', {
+                autoFocus: false
+            })
+            .addField('email', {
+                autoFocus: true
+            });
+        this.$username.val('');
+        this.$email.val('invalid_email');
+        $('#submitButton').click();
+
+        expect(this.$username.is(':focus')).toBeFalsy();
+        expect(this.$email.is(':focus')).toBeTruthy();
+        expect($(document.activeElement).attr('name')).toEqual('email');
     });
 });
 
@@ -266,6 +378,152 @@ describe('container tooltip/popover', function() {
         expect(this.$firstName.parent().find('i').data('bs.tooltip')).toBeUndefined();
         expect(this.$lastName.parent().find('i').data('bs.popover')).toBeUndefined();
     });
+
+    // #991: Validate once when setting trigger: blur, container: tooltip
+    it('trigger: blur, container: tooltip', function() {
+        $('#containerForm').bootstrapValidator({
+            container: 'tooltip',
+            trigger: 'blur',
+            fields: {
+                firstName: {
+                    validators: {
+                        stringLength: {
+                            min: 5,
+                            message: 'The first name must be more than 5 characters'
+                        },
+                        notEmpty: {
+                            message: 'The first name is required'
+                        },
+                        regexp: {
+                            regexp: /^[a-z]+$/i,
+                            message: 'The first name must consist of a-z, A-Z characters only'
+                        }
+                    }
+                },
+                lastName: {
+                    validators: {
+                        stringLength: {
+                            min: 5,
+                            message: 'The last name must be more than 5 characters'
+                        },
+                        notEmpty: {
+                            message: 'The last name is required'
+                        },
+                        regexp: {
+                            regexp: /^[a-z]+$/i,
+                            message: 'The last name must consist of a-z, A-Z characters only'
+                        }
+                    }
+                }
+            }
+        });
+
+        this.bv         = $('#containerForm').data('bootstrapValidator');
+        this.$firstName = this.bv.getFieldElements('firstName');
+        this.$lastName  = this.bv.getFieldElements('lastName');
+
+        this.$firstName.val('').trigger('blur');
+        this.bv.validate();
+        expect(this.$firstName.parent().find('i').data('bs.tooltip')).toBeDefined();
+        expect(this.$firstName.parent().find('i').data('bs.tooltip').type).toEqual('tooltip');
+        expect(this.$firstName.parent().find('i').data('bs.tooltip').getTitle()).toEqual('The first name is required');
+
+        this.bv.resetForm();
+        this.$firstName.val('@not#valid');
+        this.$lastName.val('').focus();
+        this.bv.validate();
+        expect(this.$firstName.parent().find('i').data('bs.tooltip')).toBeDefined();
+        expect(this.$firstName.parent().find('i').data('bs.tooltip').type).toEqual('tooltip');
+        expect(this.$firstName.parent().find('i').data('bs.tooltip').getTitle()).toEqual('The first name must consist of a-z, A-Z characters only');
+
+        this.bv.resetForm();
+        this.$firstName.val('Phuo');
+        this.$lastName.val('').focus();
+        this.bv.validate();
+        expect(this.$firstName.parent().find('i').data('bs.tooltip')).toBeDefined();
+        expect(this.$firstName.parent().find('i').data('bs.tooltip').type).toEqual('tooltip');
+        expect(this.$firstName.parent().find('i').data('bs.tooltip').getTitle()).toEqual('The first name must be more than 5 characters');
+
+        this.bv.resetForm();
+        this.$firstName.val('Phuoc');
+        this.$lastName.val('').focus();
+        this.bv.validate();
+        expect(this.$firstName.parent().find('i').data('bs.tooltip')).toBeUndefined();
+    });
+});
+
+describe('dynamic fields', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="dynamicForm">',
+                '<div class="form-group">',
+                    '<input type="text" name="fullName" class="form-control" />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#dynamicForm').bootstrapValidator({
+            fields: {
+                fullName: {
+                    validators: {
+                        notEmpty: {
+                            message: 'The full name is required and cannot be empty'
+                        },
+                        stringLength: {
+                            min: 8,
+                            max: 40,
+                            message: 'The full name must be more than %s and less than %s characters long'
+                        },
+                        regexp: {
+                            enabled: false,
+                            regexp: /^[a-zA-Z\s]+$/,
+                            message: 'The full name can only consist of alphabetical, number, and space'
+                        }
+                    }
+                },
+                // #725: Note that the email field isn't available in the form yet
+                email: {
+                    validators: {
+                        emailAddress: {
+                            message: 'The email address is not valid'
+                        }
+                    }
+                }
+            }
+        });
+
+        this.bv        = $('#dynamicForm').data('bootstrapValidator');
+        this.$fullName = this.bv.getFieldElements('fullName');
+    });
+
+    afterEach(function() {
+        $('#dynamicForm').bootstrapValidator('destroy').remove();
+    });
+
+    // https://github.com/nghuuphuoc/bootstrapvalidator/pull/725
+    it('adding field [does not exist but is already set in "fields" option]', function() {
+        var $div   = $('<div/>').addClass('form-group').appendTo($('#dynamicForm'));
+            $email = $('<input/>')
+                        .attr('type', 'text')
+                        .addClass('form-control')
+                        .attr('name', 'email')
+                        .appendTo($div);
+
+        this.bv.addField('email');
+
+        this.$fullName.val('Phuoc Nguyen');
+
+        $email.val('not valid@email');
+        this.bv.validate();
+        expect(this.bv.isValidField('email')).toBeFalsy();
+        expect(this.bv.isValid()).toBeFalsy();
+
+        this.bv.resetForm();
+        $email.val('valid@email.com');
+        this.bv.validate();
+        expect(this.bv.isValidField('email')).toBeTruthy();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
 });
 
 describe('enable validators', function() {
@@ -436,7 +694,7 @@ describe('event form attribute callback global', function() {
     });
 
     it('call data-bv-onerror', function() {
-        this.$email.val('email@domain');
+        this.$email.val('a@b@c@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('form eventForm is invalid');
     });
@@ -470,7 +728,7 @@ describe('event form attribute callback namespace', function() {
     });
 
     it('call data-bv-onerror', function() {
-        this.$email.val('email@domain');
+        this.$email.val('just"not"right@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('TestSuite.Event.onFormInvalid() called, form eventForm is invalid');
     });
@@ -511,7 +769,7 @@ describe('event form trigger', function() {
     });
 
     it('trigger error.form.bv', function() {
-        this.$email.val('email@domain');
+        this.$email.val('this is"not\\allowed@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('form eventForm triggered error.form.bv event');
     });
@@ -552,7 +810,7 @@ describe('event form programmatically', function() {
     });
 
     it('call onError()', function() {
-        this.$email.val('email@domain');
+        this.$email.val('Abc.example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('onError() called');
     });
@@ -604,7 +862,7 @@ describe('event field attribute callback global', function() {
     });
 
     it('call data-bv-onerror', function() {
-        this.$email.val('email@domain');
+        this.$email.val('A@b@c@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('email is invalid');
         expect($('#status').html()).toEqual(this.bv.STATUS_INVALID);
@@ -641,7 +899,7 @@ describe('event field attribute callback namespace', function() {
     });
 
     it('call data-bv-onerror', function() {
-        this.$email.val('email@domain');
+        this.$email.val('a"b(c)d,e:f;gi[j\\k]l@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('TestSuite.Event.onEmailInvalid() called, email is invalid');
         expect($('#status').html()).toEqual('TestSuite.Event.onEmailStatus() called; status = ' + this.bv.STATUS_INVALID);
@@ -683,7 +941,7 @@ describe('event field trigger', function() {
     });
 
     it('trigger error.field.bv', function() {
-        this.$email.val('email@domain');
+        this.$email.val('just"not"right@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('triggered error.field.bv on email');
     });
@@ -728,7 +986,7 @@ describe('event field programmatically', function() {
     });
 
     it('call onError()', function() {
-        this.$email.val('email@domain');
+        this.$email.val('this is"not\\allowed@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('onError() called');
     });
@@ -785,13 +1043,13 @@ describe('event form trigger with default events', function() {
     });
 
     it('does not trigger bv.form.error', function() {
-        this.$email.val('email@domain');
+        this.$email.val('A@b@c@example.com');
         this.bv.validate();
         expect($('#msg').html()).not.toEqual('form eventForm1 triggered bv.form.error event');
     });
 
     it('triggers error.form.bv', function() {
-        this.$email.val('email@domain');
+        this.$email.val('A@b@c@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('form eventForm1 triggered error.form.bv event');
     });
@@ -844,19 +1102,21 @@ describe('event field trigger with default events', function() {
     });
 
     it('does not trigger error.field.bv', function() {
-        this.$email.val('email@domain');
+        this.$email.val('just"not"right@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('triggered error.field.bv on email');
     });
 
     it('triggers bv.field.error', function() {
-        this.$email.val('email@domain');
+        this.$email.val('just"not"right@example.com');
         this.bv.validate();
         expect($('#msg').html()).not.toEqual('triggered bv.field.error on email');
     });
 });
 
 describe('event form trigger with events changed', function() {
+    var defaultOptions = $.fn.bootstrapValidator.DEFAULT_OPTIONS;
+
     beforeEach(function() {
         $.fn.bootstrapValidator.DEFAULT_OPTIONS = $.extend({}, $.fn.bootstrapValidator.DEFAULT_OPTIONS, {
             events: {
@@ -904,6 +1164,7 @@ describe('event form trigger with events changed', function() {
 
     afterEach(function() {
         $('#eventForm2').bootstrapValidator('destroy').remove();
+        $.fn.bootstrapValidator.DEFAULT_OPTIONS = defaultOptions;
     });
 
     it('triggers bv.form.success', function() {
@@ -921,7 +1182,7 @@ describe('event form trigger with events changed', function() {
     it('triggers bv.form.error', function() {
         spyOn(window, 'onerror');
 
-        this.$email.val('email@domain');
+        this.$email.val('this is"not\\allowed@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('form eventForm2 triggered bv.form.error event');
 
@@ -930,7 +1191,9 @@ describe('event form trigger with events changed', function() {
 });
 
 describe('event field trigger with events changed', function() {
-    beforeEach(function () {
+    var defaultOptions = $.fn.bootstrapValidator.DEFAULT_OPTIONS;
+
+    beforeEach(function() {
         $.fn.bootstrapValidator.DEFAULT_OPTIONS = $.extend({}, $.fn.bootstrapValidator.DEFAULT_OPTIONS, {
             events: {
                 formInit: 'init.form.bv',
@@ -977,6 +1240,7 @@ describe('event field trigger with events changed', function() {
 
     afterEach(function() {
         $('#eventForm4').bootstrapValidator('destroy').remove();
+        $.fn.bootstrapValidator.DEFAULT_OPTIONS = defaultOptions;
     });
 
     it('triggers success.field.bv', function() {
@@ -992,7 +1256,7 @@ describe('event field trigger with events changed', function() {
     });
 
     it('does not trigger error.field.bv', function() {
-        this.$email.val('email@domain');
+        this.$email.val('Abc.example.com');
         this.bv.validate();
         expect($('#msg').html()).not.toEqual('triggered error.field.bv on email');
     });
@@ -1000,7 +1264,7 @@ describe('event field trigger with events changed', function() {
     it('triggers bv.field.error', function() {
         spyOn(window, 'onerror');
 
-        this.$email.val('email@domain');
+        this.$email.val('Abc.example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('triggered bv.field.error on email');
 
@@ -1048,7 +1312,7 @@ describe('event validator declarative', function() {
     });
 
     it('trigger data-bv-emailaddress-onerror', function() {
-        this.$email.val('email@domain');
+        this.$email.val('A@b@c@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('emailAddress validator did not pass');
     });
@@ -1098,7 +1362,7 @@ describe('event validator programmatically', function() {
     });
 
     it('call onError()', function() {
-        this.$email.val('email@domain');
+        this.$email.val('A@b@c@example.com');
         this.bv.validate();
         expect($('#msg').html()).toEqual('emailAddress validator: onError() called');
     });
@@ -1640,7 +1904,7 @@ describe('i18n', function() {
         expect(this.bv.getMessages('username', 'different')[0]).toEqual(i18n.different['default']);
 
         this.bv.resetForm();
-        this.$email.val('invalid#email@address');
+        this.$email.val('A@b@c@example.com');
         this.bv.validate();
         expect(this.bv.getMessages(this.$email, 'emailAddress')[0]).toEqual(i18n.emailAddress['default']);
 
@@ -1785,6 +2049,364 @@ describe('message', function() {
     });
 });
 
+describe('submit', function() {
+    var submitted, originalTimeout;
+
+    $.fn.bootstrapValidator.validators.fake_remote = {
+        validate: function(validator, $field, options) {
+            var dfd = new $.Deferred();
+            setTimeout(function() {
+                dfd.resolve($field, 'fake_remote', { valid: options.valid });
+            }, 0);
+            return dfd;
+        }
+    };
+    
+    beforeEach(function() {
+        $([
+            '<form id="submitForm" class="form-horizontal" role="form">',
+                '<div class="form-group">',
+                    '<input name="username" type="text" class="form-control" value="me" required />',
+                '</div>',
+                '<button id="sendButton" type="submit" class="btn btn-default">Send</button>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        this.$form = $('#submitForm');
+        this.$form
+            .bootstrapValidator()
+            .on('success.form.bv', function(e) {
+                e.preventDefault();
+                ++submitted;
+            })
+            .submit(function(e) {
+                e.preventDefault();
+            });
+            
+        submitted      = 0;
+        this.bv        = this.$form.data('bootstrapValidator');
+        this.$username = this.bv.getFieldElements('username');
+
+        originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
+    });
+
+    afterEach(function() {
+        $('#submitForm').bootstrapValidator('destroy').remove();
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout;
+    });
+
+    // #481
+    it('without callback nor remote', function(done) {
+        $('#sendButton').click();
+        setTimeout(function() {
+            expect(submitted).toBe(1);
+            done();
+        }, 0);
+    });
+
+    // #481
+    it('with callback returning true', function(done) {
+        this.bv.addField('username', {
+            validators: {
+                callback: {
+                    message: 'Please enter an username',
+                    callback: function(value, validator, $field) {
+                        return true;
+                    }
+                }
+            }
+        });
+        $('#sendButton').click();
+        setTimeout(function() {
+            expect(submitted).toBe(1);
+            done();
+        }, 0);
+    });
+
+    // #481
+    it('with callback returning false', function(done) {
+        this.bv.addField('username', {
+            validators: {
+                callback: {
+                    message: 'Please enter an username',
+                    callback: function(value, validator, $field) {
+                        return false;
+                    }
+                }
+            }
+        });
+        $('#sendButton').click();
+        setTimeout(function() {
+            expect(submitted).toBe(0);
+            done();
+        }, 0);
+    });
+
+    // #481
+    it('with remote returning true', function(done) {
+        this.bv.addField('username', {
+            validators: {
+                remote: {
+                    url: 'http://echo.jsontest.com/valid/true',
+                    message: 'The username is not available'
+                }
+            }
+        });
+        $('#sendButton').click();
+        setTimeout(function() {
+            expect(submitted).toBe(1);
+            done();
+        }, 3000);
+    });
+
+    // #481
+    it('with remote returning false', function(done) {
+        this.bv.addField('username', {
+            validators: {
+                remote: {
+                    url: 'http://echo.jsontest.com/valid/false',
+                    message: 'The username is not available'
+                }
+            }
+        });
+        $('#sendButton').click();
+        setTimeout(function() {
+            expect(submitted).toBe(0);
+            done();
+        }, 3000);
+    });
+
+    // #481
+    it('with fake remote returning true', function(done) {
+        this.bv.addField('username', {
+            validators: {
+                fake_remote: {
+                    message: 'The username is not available',
+                    valid: true
+                }
+            }
+        });
+        $('#sendButton').click();
+        setTimeout(function() {
+            expect(submitted).toBe(1);
+            done();
+        }, 100);
+    });
+
+    // #481
+    it('with fake remote returning false', function(done) {
+        this.bv.addField('username', {
+            validators: {
+                fake_remote: {
+                    message: 'The username is not available',
+                    valid: false
+                }
+            }
+        });
+        $('#sendButton').click();
+        setTimeout(function() {
+            expect(submitted).toBe(0);
+            done();
+        }, 100);
+    });
+});
+
+describe('verbose option', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="verboseForm">',
+                '<div class="form-group">',
+                    '<input type="text" name="fullName" class="form-control" ',
+                        'required data-bv-notempty-message="The full name is required and cannot be empty" ',
+                        'data-bv-regexp="true" data-bv-regexp-regexp="^[a-zA-Z\\s]+$" data-bv-regexp-message="The full name can only consist of alphabetical, number, and space" ',
+                        'data-bv-stringlength="true" data-bv-stringlength-min="8" data-bv-stringlength-max="40" data-bv-stringlength-message="The full name must be more than 8 and less than 40 characters long" ',
+                    '/>',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        // The order of validators are alphabetical:
+        // - notEmpty
+        // - regexp
+        // - stringLength
+    });
+
+    afterEach(function() {
+        $('#verboseForm').bootstrapValidator('destroy').remove();
+    });
+
+    it('set data-bv-verbose="false" for form', function() {
+        var bv        = $('#verboseForm')
+                            .attr('data-bv-verbose', 'false')
+                            .bootstrapValidator('destroy')
+                            .bootstrapValidator()
+                            .data('bootstrapValidator'),
+            $fullName = bv.getFieldElements('fullName'),
+            messages;
+
+        $fullName.val('');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-notempty-message'));
+
+        bv.resetForm();
+        $fullName.val('Spe@#$');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-regexp-message'));
+
+        bv.resetForm();
+        $fullName.val('Full');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-stringlength-message'));
+    });
+
+    it('set data-bv-verbose="false" for field', function() {
+        var bv        = $('#verboseForm')
+                            .attr('data-bv-verbose', 'true')
+                            .find('[name="fullName"]')
+                                .attr('data-bv-verbose', 'false')
+                                .end()
+                            .bootstrapValidator('destroy')
+                            .bootstrapValidator()
+                            .data('bootstrapValidator'),
+            $fullName = bv.getFieldElements('fullName'),
+            messages;
+
+        $fullName.val('');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-notempty-message'));
+
+        bv.resetForm();
+        $fullName.val('Spe@#$');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-regexp-message'));
+
+        bv.resetForm();
+        $fullName.val('Full');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-stringlength-message'));
+    });
+
+    it('set verbose: "false" for form', function() {
+        var bv        = $('#verboseForm')
+                            .bootstrapValidator('destroy')
+                            .bootstrapValidator({ verbose: false })
+                            .data('bootstrapValidator'),
+            $fullName = bv.getFieldElements('fullName'),
+            messages;
+
+        $fullName.val('');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-notempty-message'));
+
+        bv.resetForm();
+        $fullName.val('Spe@#$');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-regexp-message'));
+
+        bv.resetForm();
+        $fullName.val('Full');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-stringlength-message'));
+    });
+
+    // #1057
+    it('set verbose: "false" for field', function() {
+        var bv        = $('#verboseForm')
+                            .attr('data-bv-verbose', 'true')
+                            .bootstrapValidator('destroy')
+                            .bootstrapValidator({
+                                verbose: true,
+                                fields: {
+                                    fullName: {
+                                        verbose: false
+                                    }
+                                }
+                            })
+                            .data('bootstrapValidator'),
+            $fullName = bv.getFieldElements('fullName'),
+            messages;
+
+        $fullName.val('');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-notempty-message'));
+
+        bv.resetForm();
+        $fullName.val('Spe@#$');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-regexp-message'));
+
+        bv.resetForm();
+        $fullName.val('Full');
+        bv.validate();
+        messages = bv.getMessages('fullName');
+        expect(messages.length).toEqual(1);
+        expect(messages[0]).toEqual($fullName.attr('data-bv-stringlength-message'));
+    });
+
+    // #1055
+    it('trigger "error.field.bv" event', function() {
+        var validators = [],    // Array of not passed validators
+            bv         = $('#verboseForm')
+                            .attr('data-bv-verbose', 'true')
+                            .bootstrapValidator('destroy')
+                            .bootstrapValidator({
+                                verbose: true,
+                                fields: {
+                                    fullName: {
+                                        verbose: false
+                                    }
+                                }
+                            })
+                            .on('error.field.bv', function(e, data) {
+                                validators.push(data.validator);
+                            })
+                            .data('bootstrapValidator'),
+            $fullName  = bv.getFieldElements('fullName');
+
+        $fullName.val('');
+        bv.validate();
+        expect(validators.length).toEqual(1);
+        expect(validators[0]).toEqual('notEmpty');
+
+        validators = [];
+        bv.resetForm();
+        $fullName.val('Spe@#$');
+        bv.validate();
+        expect(validators.length).toEqual(1);
+        expect(validators[0]).toEqual('regexp');
+
+        validators = [];
+        bv.resetForm();
+        $fullName.val('Full');
+        bv.validate();
+        expect(validators.length).toEqual(1);
+        expect(validators[0]).toEqual('stringLength');
+    });
+});
+
 function betweenCompareMin() {
     var compareTo = $('#betweenForm').find('[name="minAge"]').val();
     $('#msgMin').html('betweenCompareMin() called; compare to ' + compareTo);
@@ -1866,10 +2488,8 @@ describe('between', function() {
     });
 
     it('compare to other field', function() {
-        this.$age.attr('data-bv-between-min', 'minAge')
-                 .attr('data-bv-between-max', 'maxAge');
-        this.bv.destroy();
-        this.bv = $('#betweenForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('age', 'between', 'min', 'minAge');
+        this.bv.updateOption('age', 'between', 'max', 'maxAge');
 
         this.$minAge.val(2);
         this.$maxAge.val(10);
@@ -1886,11 +2506,29 @@ describe('between', function() {
         expect(this.bv.getMessages('age', 'between')[0]).toEqual($.fn.bootstrapValidator.helpers.format($.fn.bootstrapValidator.i18n.between['default'], [this.$minAge.val(), this.$maxAge.val()]));
     });
 
+    // #1048
+    it('compare to other field that value has comma', function() {
+        this.bv.updateOption('age', 'between', 'min', 'minAge');
+        this.bv.updateOption('age', 'between', 'max', 'maxAge');
+
+        this.$minAge.val('2,5');
+        this.$maxAge.val('10,5');
+        this.$age.val(5);
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$minAge.val('20,5');
+        this.$maxAge.val('40,5');
+        this.$age.val(50);
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        expect(this.bv.getMessages('age', 'between')[0]).toEqual($.fn.bootstrapValidator.helpers.format($.fn.bootstrapValidator.i18n.between['default'], [this.$minAge.val(), this.$maxAge.val()]));
+    });
+
     it('compare to return value of a function', function() {
-        this.$age.attr('data-bv-between-min', 'betweenCompareMin')
-                 .attr('data-bv-between-max', 'betweenCompareMax');
-        this.bv.destroy();
-        this.bv = $('#betweenForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('age', 'between', 'min', 'betweenCompareMin');
+        this.bv.updateOption('age', 'between', 'max', 'betweenCompareMax');
 
         this.$minAge.val(20);
         this.$maxAge.val(30);
@@ -1912,10 +2550,8 @@ describe('between', function() {
     });
 
     it('compare to return value of a namespace function', function() {
-        this.$age.attr('data-bv-between-min', 'TestSuite.between.compareToMin')
-                 .attr('data-bv-between-max', 'TestSuite.between.compareToMax');
-        this.bv.destroy();
-        this.bv = $('#betweenForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('age', 'between', 'min', 'TestSuite.between.compareToMin');
+        this.bv.updateOption('age', 'between', 'max', 'TestSuite.between.compareToMax');
 
         this.$minAge.val(20);
         this.$maxAge.val(30);
@@ -2008,6 +2644,661 @@ describe('callback', function() {
         this.$declarativeCaptcha.val('30');
         this.bv.validate();
         expect(this.bv.isValidField('declarativeCaptcha')).toBeTruthy();
+    });
+});
+
+describe('color', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="colorForm">',
+                '<div class="form-group">',
+                    '<input type="text" class="form-control" name="color" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" class="form-control" name="colorMultiple" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" class="form-control" name="colorHex" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" class="form-control" name="colorRgb" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" class="form-control" name="colorRgba" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" class="form-control" name="colorHsl" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" class="form-control" name="colorHsla" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" class="form-control" name="colorKeyword" />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#colorForm').bootstrapValidator({
+            fields: {
+                color: {
+                    validators: {
+                        color: { }
+                    }
+                },
+                colorMultiple: {
+                    validators: {
+                        color: {
+                            type: [
+                                'hex',
+                                'rgb'
+                            ]
+                        }
+                    }
+                },
+                colorHex: {
+                    validators: {
+                        color: {
+                            type: ['hex']
+                        }
+                    }
+                },
+                colorRgb: {
+                    validators: {
+                        color: {
+                            type: ['rgb']
+                        }
+                    }
+                },
+                colorRgba: {
+                    validators: {
+                        color: {
+                            type: ['rgba']
+                        }
+                    }
+                },
+                colorHsl: {
+                    validators: {
+                        color: {
+                            type: ['hsl']
+                        }
+                    }
+                },
+                colorHsla: {
+                    validators: {
+                        color: {
+                            type: ['hsla']
+                        }
+                    }
+                },
+                colorKeyword: {
+                    validators: {
+                        color: {
+                            type: ['keyword']
+                        }
+                    }
+                }
+            }
+        });
+
+        this.bv             = $('#colorForm').data('bootstrapValidator');
+        this.$color         = this.bv.getFieldElements('color');
+        this.$colorMultiple = this.bv.getFieldElements('colorMultiple');
+        this.$colorHex      = this.bv.getFieldElements('colorHex');
+        this.$colorRgb      = this.bv.getFieldElements('colorRgb');
+        this.$colorRgba     = this.bv.getFieldElements('colorRgba');
+        this.$colorHsl      = this.bv.getFieldElements('colorHsl');
+        this.$colorHsla     = this.bv.getFieldElements('colorHsla');
+        this.$colorKeyword  = this.bv.getFieldElements('colorKeyword');
+    });
+
+    afterEach(function() {
+        $('#colorForm').bootstrapValidator('destroy').remove();
+    });
+
+    // Start hsla() tests
+    it('Run hsla() test suite on hsla only field', function() {
+        this.$colorHsla.val('hsla(120,50%,50%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla( 120 , 50% , 50%, 1 )');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(  120,  50%,       50% ,   1  )');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(-120,50%,50%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(480,50%,50%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,100%,0)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,100%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,100%,0.5)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,100%,.5)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,100%,.524141)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,100%,50%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,100%,2)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,100%,-1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,100%,1.000000000001)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,100%,-0.5)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,100%,2.3)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(10,-50%,50%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(10,50%,-50%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('120,50%,50%,1');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,100%,101%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla (120,50%,50%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val(' hsla(120,50%,50%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120,50%,50%,1) ');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(50%, 50%, 100%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120, 50, 100%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsla.val('hsla(120, 50%, 100,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+    });
+
+    // Start hsl() tests
+    it('Run hsl() test suite on hsl only field', function() {
+        this.$colorHsl.val('hsl(120,50%,50%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl( 120 , 50% , 50% )');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl(  120,  50%,       50%  )');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl(-120,50%,50%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl(480,50%,50%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl(10,-50%,50%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl(10,50%,-50%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsl.val('120,50%,50%');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl(120,100%,101%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl (120,50%,50%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsl.val(' hsl(120,50%,50%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl(120,50%,50%) ');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl(50%, 50%, 100%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl(120, 50, 100%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorHsl.val('hsl(120, 50%, 100)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toEqual(false);
+    });
+
+    // Start keyword test
+    it('Run keyword test suite on keyword only field', function() {
+        this.$colorKeyword.val('transparent');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorKeyword')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorKeyword.val('transparent');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorKeyword')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorKeyword.val('blueviolet red');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorKeyword')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorKeyword.val('shady');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorKeyword')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorKeyword.val('blueish');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorKeyword')).toEqual(false);
+    });
+
+    // Start rgba() test
+    it('Run rgba() test suite on rgba only field', function() {
+        this.$colorRgba.val('rgba(255,255,255,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba( 255 , 255 , 255 , 1 )');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(  255  ,  255    ,       255 ,  1     )');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(100%,100%,100%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,0)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,0.5)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,.5)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,.524141)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(100%,100%,100%,0)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(100%,100%,100%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(100%,100%,100%,0.5)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(100%,100%,100%,.5)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(100%,100%,100%,.524141)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(100%,100%,100%,50%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,2)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,-1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,1.000000000001)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,-0.5)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,2.3)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,100%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(-10,255,255,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(-10%,100%,100%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('255,255,255,1');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,256),1');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(100%,100%,101%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba (255,255,255,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val(' rgba(255,255,255,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgba.val('rgba(255,255,255,1) ');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+    });
+
+    // Start rgb() test
+    it('Run rgb() test suite on rgb only field', function() {
+        this.$colorRgb.val('rgb(255,255,255)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgb.val('rgb( 255 , 255 , 255 )');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgb.val('rgb(  255,  255,       255  )');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgb.val('rgb(255,255,255)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgb.val('rgb(100%,100%,100%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$colorRgb.val('rgb(255,255,100%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgb.val('rgb(-10,255,255)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgb.val('rgb(-10%,100%,100%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgb.val('255,255,255');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgb.val('rgb(255,255,256)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgb.val('rgb(100%,100%,101%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgb.val('rgb (255,255,255)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgb.val(' rgb(255,255,255)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$colorRgb.val('rgb(255,255,255) ');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toEqual(false);
+    });
+
+    /* Run individual tests */
+    it('Individual field keyword: accept keyword', function() {
+        this.$colorKeyword.val('blue');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorKeyword')).toBeTruthy();
+    });
+
+    it('Individual field keyword: reject rgb', function() {
+        this.$colorKeyword.val('rgb(255,255,255)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorKeyword')).toEqual(false);
+    });
+
+    it('Individual field hex: accept 6 char hex', function() {
+        this.$colorHex.val('#0000FF');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHex')).toBeTruthy();
+    });
+
+    it('Individual field hex: accept 3 char hex', function() {
+        this.$colorHex.val('#00F');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHex')).toBeTruthy();
+    });
+    it('Individual field hex: reject keyword', function() {
+        this.$colorHex.val('blue');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHex')).toEqual(false);
+    });
+
+    it('Individual field rgb(): accept rgb()', function() {
+        this.$colorRgb.val('rgb(255,255,255)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toBeTruthy();
+    });
+
+    it('Individual field rgb(): reject hex', function() {
+        this.$colorRgb.val('#0000FF');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgb')).toEqual(false);
+    });
+
+    it('Individual field rgba(): accept rgba()', function() {
+        this.$colorRgba.val('rgba(255,255,255,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toBeTruthy();
+    });
+
+    it('Individual field rgba(): reject rgb()', function() {
+        this.$colorRgba.val('rgb(255,255,255)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorRgba')).toEqual(false);
+    });
+
+    it('Individual field hsl(): accept hsl()', function() {
+        this.$colorHsl.val('hsl(120,50%,50%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toBeTruthy();
+    });
+
+    it('Individual field hsl(): reject rgba()', function() {
+        this.$colorHsl.val('rgba(255,255,255,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsl')).toEqual(false);
+    });
+
+    it('Individual field hsla(): accept hsla()', function() {
+        this.$colorHsla.val('hsla(120,50%,50%,1)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toBeTruthy();
+    });
+
+    it('Individual field hsla(): reject hsl()', function() {
+        this.$colorHsla.val('hsl(120,50%,50%)');
+        this.bv.validate();
+        expect(this.bv.isValidField('colorHsla')).toEqual(false);
+    });
+
+    /* Run validation message tests */
+    it('Validation message tests', function() {
+        this.$color.val('notacolor');
+        this.bv.validate();
+        expect(this.bv.isValidField('color')).toEqual(false);
+        expect(this.bv.getMessages(this.$color, 'color')[0]).toEqual($.fn.bootstrapValidator.i18n.color.default);
     });
 });
 
@@ -2133,6 +3424,18 @@ describe('creditCard', function() {
     });
 });
 
+function getDate(value, validator, $field) {
+    return validator.getFieldElements('date').val();
+};
+
+TestSuite = $.extend({}, TestSuite, {
+    Date: {
+        getDate: function(value, validator, $field) {
+            return validator.getFieldElements('date').val();
+        }
+    }
+});
+
 describe('date', function() {
     beforeEach(function() {
         $([
@@ -2141,13 +3444,25 @@ describe('date', function() {
                 '<div class="form-group">',
                     '<input type="text" name="date" data-bv-date />',
                 '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="minDate" data-bv-date data-bv-date-min="" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="maxDate" data-bv-date data-bv-date-max="" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="range" data-bv-date data-bv-date-min="" data-bv-date-max="" />',
+                '</div>',
             '</form>'
         ].join('\n')).appendTo('body');
 
         $('#dateForm').bootstrapValidator();
 
-        this.bv    = $('#dateForm').data('bootstrapValidator');
-        this.$date = this.bv.getFieldElements('date');
+        this.bv       = $('#dateForm').data('bootstrapValidator');
+        this.$date    = this.bv.getFieldElements('date');
+        this.$minDate = this.bv.getFieldElements('minDate');
+        this.$maxDate = this.bv.getFieldElements('maxDate');
+        this.$range   = this.bv.getFieldElements('range');
     });
 
     afterEach(function() {
@@ -2321,6 +3636,627 @@ describe('date', function() {
         this.bv.validate();
         expect(this.bv.isValid()).toBeTruthy();
     });
+
+    // min test suite
+    it('min date format YYYY/MM/DD', function() {
+        this.bv.updateOption('minDate', 'date', 'format', 'YYYY/MM/DD');
+        this.bv.updateOption('minDate', 'date', 'min', '2010/01/01');
+
+        this.$minDate.val('2010/01/02');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$minDate.val('2010/01/002'); // day prefexid by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$minDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$minDate.val('2009/12/31');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$minDate.val('2000/01/01');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+    });
+
+    it('min date format YYYY-MM-DD', function() {
+        this.bv.updateOption('minDate', 'date', 'format', 'YYYY-MM-DD');
+        this.bv.updateOption('minDate', 'date', 'min', '2010-01-01');
+
+        this.$minDate.val('2010-01-02');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$minDate.val('2010-001-02'); // month prefexid by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$minDate.val('2014-08-17');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$minDate.val('2009-12-31');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$minDate.val('2000-01-01');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+    });
+
+    it('min date format DD/MM/YYYY', function() {
+        this.bv.updateOption('minDate', 'date', 'format', 'DD/MM/YYYY');
+        this.bv.updateOption('minDate', 'date', 'min', '01/01/2010');
+
+        this.$minDate.val('02/01/2010');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$minDate.val('17/08/2014');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$minDate.val('02/01/02010'); // year prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$minDate.val('31/12/2009');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$minDate.val('01/01/2000');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+    });
+
+    it('min date format YYYY-MM-DD h:m:s', function() {
+        this.bv.updateOption('minDate', 'date', 'format', 'YYYY-MM-DD h:m:s');
+        this.bv.updateOption('minDate', 'date', 'min', '2010-01-01 01:00:00');
+
+        this.bv.resetForm();
+        this.$minDate.val('2010-01-01 01:00:01');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.$minDate.val('2010-01-02 01:00:01');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$minDate.val('2014-08-17 12:00:00');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$minDate.val('2009-12-31 00:00:00');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$minDate.val('2009-12-31 010:00:00'); // hours prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$minDate.val('2009-12-31 10:001:00'); // minutes prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$minDate.val('2009-12-31 10:01:012'); // seconds prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$minDate.val('2009-12-31 00:00:00');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$minDate.val('2000-01-01 23:00:12');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toEqual(false);
+    });
+
+    // max test suite
+    it('max date format YYYY/MM/DD', function() {
+        this.bv.updateOption('maxDate', 'date', 'format', 'YYYY/MM/DD');
+        this.bv.updateOption('maxDate', 'date', 'max', '2014/09/10');
+
+        this.$maxDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$maxDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$maxDate.val('02014/012/031'); // year, month or day prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$maxDate.val('2014/12/31');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$maxDate.val('2015/01/01');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+    });
+
+    it('max date format YYYY-MM-DD', function() {
+        this.bv.updateOption('maxDate', 'date', 'format', 'YYYY-MM-DD');
+        this.bv.updateOption('maxDate', 'date', 'max', '2014-09-10');
+
+        this.$maxDate.val('2014-09-09');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$maxDate.val('2014-08-17');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$maxDate.val('02014-012-031');  // year, month or day prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$maxDate.val('2014-12-31');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$maxDate.val('2015-01-01');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+    });
+
+    it('max date format DD/MM/YYYY', function() {
+        this.bv.updateOption('maxDate', 'date', 'format', 'DD/MM/YYYY');
+        this.bv.updateOption('maxDate', 'date', 'max', '10/09/2014');
+
+        this.$maxDate.val('09/09/2014');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$maxDate.val('17/08/2014');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$maxDate.val('031/012/02014'); // year, month or day prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$maxDate.val('31/12/2014');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$maxDate.val('01/01/2015');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+    });
+
+    it('max date format YYYY-MM-DD h:m:s', function() {
+        this.bv.updateOption('maxDate', 'date', 'format', 'YYYY-MM-DD h:m:s');
+        this.bv.updateOption('maxDate', 'date', 'max', '2014-09-10 01:00:00');
+
+        this.$maxDate.val('2014-09-09 01:00:01');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$maxDate.val('2014-08-17 12:00:00');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$maxDate.val('2014-09-09 001:001:001'); // hours, minutes or seconds prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$maxDate.val('2014-12-31 00:00:00');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$maxDate.val('2015-01-01 23:00:12');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toEqual(false);
+    });
+
+    // range test suite
+    it('range format YYYY/MM/DD', function() {
+        this.bv.updateOption('range', 'date', 'format', 'YYYY/MM/DD');
+        this.bv.updateOption('range', 'date', 'min', '2010/09/10');
+        this.bv.updateOption('range', 'date', 'max', '2014/09/10');
+
+        this.$range.val('2011/01/01');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$range.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$range.val('02014/001/031'); // year, month or day prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$range.val('2010/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$range.val('2014/09/11');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+    });
+
+    it('range format YYYY-MM-DD', function() {
+        this.bv.updateOption('range', 'date', 'format', 'YYYY-MM-DD');
+        this.bv.updateOption('range', 'date', 'min', '2010-09-10');
+        this.bv.updateOption('range', 'date', 'max', '2014-09-10');
+
+        this.$range.val('2012-01-12');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$range.val('2014-09-09');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$range.val('02014-003-031');  // year, month or day prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$range.val('2009-12-31');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$range.val('2015-01-01');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+    });
+
+    it('range format DD/MM/YYYY', function() {
+        this.bv.updateOption('range', 'date', 'format', 'DD/MM/YYYY');
+        this.bv.updateOption('range', 'date', 'min', '10/09/2010');
+        this.bv.updateOption('range', 'date', 'max', '10/09/2014');
+
+        this.$range.val('11/11/2011');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$range.val('17/08/2014');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$range.val('031/012/02013'); // year, month or day prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$range.val('31/01/2010');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$range.val('25/03/2015');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+    });
+
+    it('range format YYYY-MM-DD h:m:s', function() {
+        this.bv.updateOption('range', 'date', 'format', 'YYYY-MM-DD h:m:s');
+        this.bv.updateOption('range', 'date', 'min', '2010-05-15 22:00:00');
+        this.bv.updateOption('range', 'date', 'max', '2015-05-15 22:00:00');
+
+        this.$range.val('2012-07-17 01:00:01');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$range.val('2013-08-17 12:00:00');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$range.val('2011-06-19 001:001:001'); // hours, minutes or seconds prefixed by 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$range.val('2008-11-27 23:15:00');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+
+        this.bv.resetForm();
+        this.$range.val('2015-05-15 22:00:01');
+        this.bv.validate();
+        expect(this.bv.isValidField('range')).toEqual(false);
+    });
+
+    // dynamic min option
+    it('dynamic min: name of field', function() {
+        this.$minDate.attr('data-bv-date-min', 'date');
+        this.bv.destroy();
+        this.bv = $('#dateForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('minDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2014/09/08');
+        this.$minDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/09/08');
+        this.$minDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeFalsy();
+    });
+
+    it('dynamic min: callback declarative function', function() {
+        this.$minDate.attr('data-bv-date-min', 'getDate');
+        this.bv.destroy();
+        this.bv = $('#dateForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('minDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2014/09/08');
+        this.$minDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/10/01');
+        this.$minDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeFalsy();
+    });
+
+    it('dynamic min: callback declarative function()', function() {
+        this.$minDate.attr('data-bv-date-min', 'getDate()');
+        this.bv.destroy();
+        this.bv = $('#dateForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('minDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2014/09/08');
+        this.$minDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/10/01');
+        this.$minDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeFalsy();
+    });
+
+    it('dynamic min: callback declarative A.B.C', function() {
+        this.$minDate.attr('data-bv-date-min', 'TestSuite.Date.getDate');
+        this.bv.destroy();
+        this.bv = $('#dateForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('minDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2014/09/08');
+        this.$minDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/10/01');
+        this.$minDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeFalsy();
+    });
+
+    it('dynamic min: callback declarative A.B.C()', function() {
+        this.$minDate.attr('data-bv-date-min', 'TestSuite.Date.getDate()');
+        this.bv.destroy();
+        this.bv = $('#dateForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('minDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2014/09/08');
+        this.$minDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/10/01');
+        this.$minDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeFalsy();
+    });
+
+    it('dynamic min: callback programmatically', function() {
+        this.$minDate.removeAttr('data-bv-date-min');
+        this.bv.destroy();
+        this.bv = $('#dateForm')
+                        .bootstrapValidator({
+                            fields: {
+                                minDate: {
+                                    validators: {
+                                        date: {
+                                            min: function(value, validator, $field) {
+                                                return getDate(value, validator, $field);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        })
+                        .data('bootstrapValidator');
+        this.bv.updateOption('minDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2014/09/08');
+        this.$minDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/10/01');
+        this.$minDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('minDate')).toBeFalsy();
+    });
+
+    // dynamic max option
+    it('dynamic max: name of field', function() {
+        this.$maxDate.attr('data-bv-date-max', 'date');
+        this.bv.destroy();
+        this.bv = $('#dateForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('maxDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2015/01/01');
+        this.$maxDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/01/01');
+        this.$maxDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeFalsy();
+    });
+
+    it('dynamic max: callback declarative function', function() {
+        this.$maxDate.attr('data-bv-date-max', 'getDate');
+        this.bv.destroy();
+        this.bv = $('#dateForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('maxDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2015/01/01');
+        this.$maxDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/01/01');
+        this.$maxDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeFalsy();
+    });
+
+    it('dynamic max: callback declarative function()', function() {
+        this.$maxDate.attr('data-bv-date-max', 'getDate()');
+        this.bv.destroy();
+        this.bv = $('#dateForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('maxDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2015/01/01');
+        this.$maxDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/01/01');
+        this.$maxDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeFalsy();
+    });
+
+    it('dynamic max: callback declarative A.B.C', function() {
+        this.$maxDate.attr('data-bv-date-max', 'TestSuite.Date.getDate');
+        this.bv.destroy();
+        this.bv = $('#dateForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('maxDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2015/01/01');
+        this.$maxDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/01/01');
+        this.$maxDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeFalsy();
+    });
+
+    it('dynamic max: callback declarative A.B.C()', function() {
+        this.$maxDate.attr('data-bv-date-max', 'TestSuite.Date.getDate()');
+        this.bv.destroy();
+        this.bv = $('#dateForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('maxDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2015/01/01');
+        this.$maxDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/01/01');
+        this.$maxDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeFalsy();
+    });
+
+    it('dynamic max: callback programmatically', function() {
+        this.$maxDate.removeAttr('data-bv-date-max');
+        this.bv.destroy();
+        this.bv = $('#dateForm')
+                        .bootstrapValidator({
+                            fields: {
+                                maxDate: {
+                                    validators: {
+                                        date: {
+                                            max: function(value, validator, $field) {
+                                                return getDate(value, validator, $field);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        })
+                        .data('bootstrapValidator');
+        this.bv.updateOption('maxDate', 'date', 'format', 'YYYY/MM/DD');
+
+        this.$date.val('2015/01/01');
+        this.$maxDate.val('2014/09/09');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$date.val('2014/01/01');
+        this.$maxDate.val('2014/08/17');
+        this.bv.validate();
+        expect(this.bv.isValidField('maxDate')).toBeFalsy();
+    });
 });
 
 describe('ean', function() {
@@ -2372,6 +4308,182 @@ describe('ean', function() {
         this.$ean.val('73513536');
         this.bv.validate();
         expect(this.bv.isValidField('ean')).toEqual(false);
+    });
+});
+
+describe('emailAddress', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="emailAddressForm">',
+                '<div id="msg"></div>',
+                '<div class="form-group">',
+                    '<input type="text" name="email-address-or-addresses" data-bv-emailaddress />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#emailAddressForm').bootstrapValidator();
+
+        this.bv = $('#emailAddressForm').data('bootstrapValidator');
+        this.$emailAddressOrAddresses = this.bv.getFieldElements('email-address-or-addresses');
+    });
+
+    afterEach(function() {
+        $('#emailAddressForm').bootstrapValidator('destroy').remove();
+    });
+
+    var validEmailAddresses = [
+        'admin@mailserver1',
+        'niceandsimple@example.com',
+        'very.common@example.com',
+        'a.little.lengthy.but.fine@dept.example.com',
+        'disposable.style.email.with+symbol@example.com',
+        'other.email-with-dash@example.com',
+        '"much.more unusual"@example.com',
+        '"very.unusual.@.unusual.com"@example.com',
+        '"very.(),:;<>[]\".VERY.\"very@\\ \"very\".unusual"@strange.example.com',
+        '" "@example.org',
+        'üñîçøðé@example.com'
+    ];
+
+    var invalidEmailAddresses = [
+        // "!#$%&'*+-/=?^_`{}|~@example.org",   // This is actually passing validation; see https://github.com/nghuuphuoc/bootstrapvalidator/issues/673
+        'üñîçøðé@üñîçøðé.com',
+        'Abc.example.com',
+        'A@b@c@example.com',
+        'a"b(c)d,e:f;gi[j\k]l@example.com',
+        'just"not"right@example.com',
+        'this is"not\allowed@example.com',
+        'this\ still\"not\\allowed@example.com'
+    ];
+
+    var validMultipleEmailAddressesForDefaultSeparators = [
+        'niceandsimple@example.com,very.common@example.com',
+        'niceandsimple@example.com;very.common@example.com',
+        'niceandsimple@example.com;very.common@example.com,a.little.lengthy.but.fine@dept.example.com'
+    ];
+
+    var invalidMultipleEmailAddressesForDefaultSeparators = [
+        'niceandsimple@example.com+very.common@example.com',
+        'niceandsimple@example.com|very.common@example.com'
+    ];
+
+    var validMultipleEmailAddressesForCommaOrDollarSignSeparators = [
+        'niceandsimple@example.com,very.common@example.com',
+        'niceandsimple@example.com$very.common@example.com',
+        'niceandsimple@example.com,very.common@example.com$a.little.lengthy.but.fine@dept.example.com'
+    ];
+
+    var invalidMultipleEmailAddressesForCommaOrDollarSignSeparators = [
+        'niceandsimple@example.com;very.common@example.com',
+        'niceandsimple@example.com;very.common@example.com,a.little.lengthy.but.fine@dept.example.com'
+    ];
+
+    it('Valid email addresses (multiple=false)', function() {
+        var that = this;
+        $.each(validEmailAddresses, function(index, emailAddress) {
+            that.bv.resetForm();
+            that.$emailAddressOrAddresses.val(emailAddress);
+            that.bv.validate();
+            expect(that.bv.isValid()).toBeTruthy();
+        });
+    });
+
+    it('Invalid email addresses (multiple=false)', function() {
+        var that = this;
+
+        var addresses = invalidEmailAddresses
+                            .concat(validMultipleEmailAddressesForDefaultSeparators)
+                            .concat(invalidMultipleEmailAddressesForDefaultSeparators)
+                            .concat(validMultipleEmailAddressesForCommaOrDollarSignSeparators)
+                            .concat(invalidMultipleEmailAddressesForCommaOrDollarSignSeparators);
+
+        $.each(addresses, function(index, emailAddress) {
+            that.bv.resetForm();
+            that.$emailAddressOrAddresses.val(emailAddress);
+            that.bv.validate();
+            expect(that.bv.isValid()).toEqual(false);
+        });
+    });
+
+    it('Invalid email addresses (multiple=false,separator=/[,\$]/)', function() {
+        var that = this;
+        that.bv.updateOption('email-address-or-addresses', 'emailAddress', 'separator', /[,;]/);
+
+        var addresses = invalidEmailAddresses
+                            .concat(validMultipleEmailAddressesForDefaultSeparators)
+                            .concat(invalidMultipleEmailAddressesForDefaultSeparators)
+                            .concat(validMultipleEmailAddressesForCommaOrDollarSignSeparators)
+                            .concat(invalidMultipleEmailAddressesForCommaOrDollarSignSeparators);
+
+        $.each(addresses, function(index, emailAddress) {
+            that.bv.resetForm();
+            that.$emailAddressOrAddresses.val(emailAddress);
+            that.bv.validate();
+            expect(that.bv.isValid()).toEqual(false);
+        });
+    });
+
+    it('Valid email addresses (multiple=true)', function() {
+        var that = this;
+        that.bv.updateOption('email-address-or-addresses', 'emailAddress', 'multiple', true);
+
+        var addresses = validEmailAddresses
+                            .concat(validMultipleEmailAddressesForDefaultSeparators);
+
+        $.each(addresses, function(index, emailAddress) {
+            that.bv.resetForm();
+            that.$emailAddressOrAddresses.val(emailAddress);
+            that.bv.validate();
+            expect(that.bv.isValid()).toBeTruthy();
+        });
+    });
+
+    it('Invalid email addresses (multiple=true)', function() {
+        var that = this;
+        that.bv.updateOption('email-address-or-addresses', 'emailAddress', 'multiple', true);
+
+        var addresses = invalidEmailAddresses
+                            .concat(invalidMultipleEmailAddressesForDefaultSeparators);
+
+        $.each(addresses, function(index, emailAddress) {
+            that.bv.resetForm();
+            that.$emailAddressOrAddresses.val(emailAddress);
+            that.bv.validate();
+            expect(that.bv.isValid()).toEqual(false);
+        });
+    });
+
+    it('Valid email addresses (multiple=true,separator=/[,\$]/)', function() {
+        var that = this;
+        that.bv.updateOption('email-address-or-addresses', 'emailAddress', 'multiple', true);
+        that.bv.updateOption('email-address-or-addresses', 'emailAddress', 'separator', /[,\$]/);
+
+        var addresses = validEmailAddresses
+                            .concat(validMultipleEmailAddressesForCommaOrDollarSignSeparators);
+
+        $.each(addresses, function(index, emailAddress) {
+            that.bv.resetForm();
+            that.$emailAddressOrAddresses.val(emailAddress);
+            that.bv.validate();
+            expect(that.bv.isValid()).toBeTruthy();
+        });
+    });
+
+    it('Invalid email addresses (multiple=true,separator=/[,\$]/)', function() {
+        var that = this;
+        that.bv.updateOption('email-address-or-addresses', 'emailAddress', 'multiple', true);
+        that.bv.updateOption('email-address-or-addresses', 'emailAddress', 'separator', /[,\$]/);
+
+        var addresses = invalidEmailAddresses
+                            .concat(invalidMultipleEmailAddressesForCommaOrDollarSignSeparators);
+
+        $.each(addresses, function(index, emailAddress) {
+            that.bv.resetForm();
+            that.$emailAddressOrAddresses.val(emailAddress);
+            that.bv.validate();
+            expect(that.bv.isValid()).toEqual(false);
+        });
     });
 });
 
@@ -2433,10 +4545,19 @@ describe('greaterThan', function() {
         expect(this.bv.isValid()).toBeTruthy();
     });
 
+    it('value with comma separator', function() {
+        this.$age.val('10,4');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$age.val('18,678');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
     it('compare to other field', function() {
-        this.$age.attr('data-bv-greaterthan-value', 'minAge');
-        this.bv.destroy();
-        this.bv = $('#greaterThanForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('age', 'greaterThan', 'value', 'minAge');
 
         this.$minAge.val(10);
         this.$age.val(20);
@@ -2451,10 +4572,24 @@ describe('greaterThan', function() {
         expect(this.bv.getMessages('age', 'greaterThan')[0]).toEqual($.fn.bootstrapValidator.helpers.format($.fn.bootstrapValidator.i18n.greaterThan['default'], this.$minAge.val()));
     });
 
+    // #1048
+    it('compare to other field that value has comma', function() {
+        this.bv.updateOption('age', 'greaterThan', 'value', 'minAge');
+        this.$minAge.val('10,5');
+        this.$age.val(20);
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$minAge.val('20,5');
+        this.$age.val(10);
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        expect(this.bv.getMessages('age', 'greaterThan')[0]).toEqual($.fn.bootstrapValidator.helpers.format($.fn.bootstrapValidator.i18n.greaterThan['default'], this.$minAge.val()));
+    });
+
     it('compare to return value of a function', function() {
-        this.$age.attr('data-bv-greaterthan-value', 'greaterThanCompare');
-        this.bv.destroy();
-        this.bv = $('#greaterThanForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('age', 'greaterThan', 'value', 'greaterThanCompare');
 
         this.$minAge.val(20);
         this.$age.val(18);
@@ -2472,9 +4607,7 @@ describe('greaterThan', function() {
     });
 
     it('compare to return value of a namespace function', function() {
-        this.$age.attr('data-bv-greaterthan-value', 'TestSuite.greaterThan.compareTo');
-        this.bv.destroy();
-        this.bv = $('#greaterThanForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('age', 'greaterThan', 'value', 'TestSuite.greaterThan.compareTo');
 
         this.$minAge.val(20);
         this.$age.val(18);
@@ -3091,7 +5224,7 @@ describe('iban', function() {
 });
 
 describe('id', function() {
-    beforeEach(function () {
+    beforeEach(function() {
         $([
             '<form class="form-horizontal" id="idForm">',
                 '<div class="form-group">',
@@ -3101,6 +5234,7 @@ describe('id', function() {
                         '<option value="BR">Brazil</option>',
                         '<option value="CH">Switzerland</option>',
                         '<option value="CL">Chile</option>',
+                        '<option value="CN">China</option>',
                         '<option value="CZ">Czech</option>',
                         '<option value="DK">Denmark</option>',
                         '<option value="EE">Estonia</option>',
@@ -3120,6 +5254,7 @@ describe('id', function() {
                         '<option value="SI">Slovenia</option>',
                         '<option value="SK">Slovakia</option>',
                         '<option value="SM">San Marino</option>',
+                        '<option value="TH">Thailand</option>',
                         '<option value="ZA">South Africa</option>',
                     '</select>',
                 '</div>',
@@ -3139,7 +5274,7 @@ describe('id', function() {
         this.$id      = this.bv.getFieldElements('id');
     });
 
-    afterEach(function () {
+    afterEach(function() {
         $('#idForm').bootstrapValidator('destroy').remove();
     });
 
@@ -3227,6 +5362,29 @@ describe('id', function() {
             this.$id.val(validSamples[i]);
             this.bv.validate();
             expect(this.bv.isValid()).toBeTruthy();
+        }
+    });
+
+    // #793
+    it('Chinese citizen identification number', function() {
+        this.bv.updateOption('id', 'id', 'country', 'CN');
+
+        // Valid samples
+        var validSamples = ['450202201409072332', '22011219930407001X', '110108601017023'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$id.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['999999199304070016', '220112190002290016', '220112199304070019', '999999601017023', '110108999999023'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$id.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
         }
     });
 
@@ -3541,6 +5699,28 @@ describe('id', function() {
             expect(this.bv.isValid()).toEqual(false);
         }
     });
+
+    it('Thailand citizen number', function() {
+        this.bv.updateOption('id', 'id', 'country', 'TH');
+
+        // Valid samples
+        var validSamples = ['7145620509547', '3688699975685', '2368719339716'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$id.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['1100800092310'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$id.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
 });
 
 describe('imo', function() {
@@ -3592,6 +5772,160 @@ describe('imo', function() {
     });
 });
 
+describe('ip', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="ipForm">',
+                '<div class="form-group">',
+                    '<input type="text" name="ipv4" data-bv-ip data-bv-ip-ipv6="false" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="ipv6" data-bv-ip data-bv-ip-ipv4="false" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="both" data-bv-ip />',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#ipForm').bootstrapValidator();
+
+        this.bv    = $('#ipForm').data('bootstrapValidator');
+        this.$ipv4 = this.bv.getFieldElements('ipv4');
+        this.$ipv6 = this.bv.getFieldElements('ipv6');
+        this.$both = this.bv.getFieldElements('both');
+    });
+
+    afterEach(function() {
+        $('#ipForm').bootstrapValidator('destroy').remove();
+    });
+
+    it('Valid ipv4', function() {
+        this.$ipv4.val('0.0.0.0');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+        
+        this.bv.resetForm();
+        this.$ipv4.val('192.168.1.1');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+        
+        this.bv.resetForm();
+        this.$ipv4.val('255.255.255.255');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+    
+    it('Invalid ipv4', function() {
+        this.$ipv4.val('10.168.0001.100');         // extra 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        
+        this.bv.resetForm();
+        this.$ipv4.val('0.0.0.256');               // 256 not allowed, max is 255
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        
+        this.bv.resetForm();
+        this.$ipv4.val('256.255.255.255');         // max is 255.255.255.255
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        
+        this.bv.resetForm();
+        this.$ipv4.val('192.168. 224.0');          // internal space
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        
+        this.bv.resetForm();
+        this.$ipv4.val('192.168.224.0 1');         // junk after valid address
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+    });
+
+    it('Valid ipv6', function() {
+        this.$ipv6.val('0000:0000:0000:0000:0000:0000:0000:0000');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+        
+        this.bv.resetForm();
+        this.$ipv6.val('fe00::1');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+        
+        this.bv.resetForm();
+        this.$ipv6.val('fe80::217:f2ff:fe07:ed62');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+        
+        this.bv.resetForm();
+        this.$ipv6.val('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+    
+    it('Invalid ipv6', function() {
+        this.$ipv6.val('02001:0000:1234:0000:0000:C1C0:ABCD:0876');     // extra 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        
+        this.bv.resetForm();
+        this.$ipv6.val('2001:0000:1234:0000:00001:C1C0:ABCD:0876');     // extra 0 not allowed
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        
+        this.bv.resetForm();
+        this.$ipv6.val('2001:0000:1234: 0000:0000:C1C0:ABCD:0876');    // internal space
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        
+        this.bv.resetForm();
+        this.$ipv6.val('2001:0000:1234:0000:0000:C1C0:ABCD:0876 0');    // junk after valid address
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        
+        this.bv.resetForm();
+        this.$ipv6.val('3ffe:0b00:0000:0001:0000:0000:000a');           // seven segment
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        
+        this.bv.resetForm();
+        this.$ipv6.val('FF02:0000:0000:0000:0000:0000:0000:0000:0001'); // nine segment
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        
+        this.bv.resetForm();
+        this.$ipv6.val('::1111:2222:3333:4444:5555:6666::');            // double "::"
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        
+        this.bv.resetForm();
+        this.$ipv6.val('3ffe:b00::1::a');                               // double "::"
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+    });
+
+    it('Both', function() {
+        this.$both.val('255.255.255.255');                            // valid
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+        
+        this.bv.resetForm();
+        this.$both.val('256.0.0.0');                                  // 256 not allowed, max is 255
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$both.val('2001:0db8:0000:85a3:0000:0000:ac1f:8001');    // valid
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+        
+        this.bv.resetForm();
+        this.$both.val('2001:0000:1234:0000:0000:C1C0:ABCD:0876 0');  // junk after valid address
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+    });
+
+});
 describe('isbn', function() {
     beforeEach(function() {
         var html = [
@@ -3880,6 +6214,17 @@ describe('lessThan', function() {
         expect(this.bv.isValid()).toEqual(false);
     });
 
+    it('value with comma separator', function() {
+        this.$age.val('120,2234');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$age.val('30,2234');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
     it('compare to value', function() {
         this.$age.val(120);
         this.bv.validate();
@@ -3892,9 +6237,7 @@ describe('lessThan', function() {
     });
 
     it('compare to other field', function() {
-        this.$age.attr('data-bv-lessthan-value', 'maxAge');
-        this.bv.destroy();
-        this.bv = $('#lessThanForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('age', 'lessThan', 'value', 'maxAge');
 
         this.$maxAge.val(40);
         this.$age.val(20);
@@ -3909,10 +6252,24 @@ describe('lessThan', function() {
         expect(this.bv.getMessages('age', 'lessThan')[0]).toEqual($.fn.bootstrapValidator.helpers.format($.fn.bootstrapValidator.i18n.lessThan['default'], this.$maxAge.val()));
     });
 
+    // #1048
+    it('compare to other field that value has comma', function() {
+        this.bv.updateOption('age', 'lessThan', 'value', 'maxAge');
+        this.$maxAge.val('30,5');
+        this.$age.val(20);
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$maxAge.val('20,5');
+        this.$age.val(30);
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+        expect(this.bv.getMessages('age', 'lessThan')[0]).toEqual($.fn.bootstrapValidator.helpers.format($.fn.bootstrapValidator.i18n.lessThan['default'], this.$maxAge.val()));
+    });
+
     it('compare to return value of a function', function() {
-        this.$age.attr('data-bv-lessthan-value', 'lessThanCompare');
-        this.bv.destroy();
-        this.bv = $('#lessThanForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('age', 'lessThan', 'value', 'lessThanCompare');
 
         this.$maxAge.val(50);
         this.$age.val(60);
@@ -3930,9 +6287,7 @@ describe('lessThan', function() {
     });
 
     it('compare to return value of a namespace function', function() {
-        this.$age.attr('data-bv-lessthan-value', 'TestSuite.lessThan.compareTo');
-        this.bv.destroy();
-        this.bv = $('#lessThanForm').bootstrapValidator().data('bootstrapValidator');
+        this.bv.updateOption('age', 'lessThan', 'value', 'TestSuite.lessThan.compareTo');
 
         this.$maxAge.val(50);
         this.$age.val(60);
@@ -4083,8 +6438,579 @@ describe('meid', function() {
     });
 });
 
+describe('phone', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="phoneForm">',
+                '<div class="form-group">',
+                    '<select class="form-control" name="country">',
+                        '<option value="BR">Brazil</option>',
+                        '<option value="CN">China</option>',
+                        '<option value="CZ">Czech Republic</option>',
+                        '<option value="DE">Gemany</option>',
+                        '<option value="DK">Denmark</option>',
+                        '<option value="ES">Spain</option>',
+                        '<option value="FR">France</option>',
+                        '<option value="GB">United Kingdom</option>',
+                        '<option value="MA">Morocco</option>',
+                        '<option value="PK">Pakistan</option>',
+                        '<option value="RO">Romania</option>',
+                        '<option value="RU">Russia</option>',
+                        '<option value="SK">Slovakia</option>',
+                        '<option value="TH">Thailand</option>',
+                        '<option value="US">USA</option>',
+                        '<option value="VE">Venezuela</option>',
+                    '</select>',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="phone" data-bv-phone />',
+                '</div>',
+            '</form>',
+        ].join('\n')).appendTo('body');
+
+        $('#phoneForm').bootstrapValidator();
+
+        /**
+         * @type {BootstrapValidator}
+         */
+        this.bv       = $('#phoneForm').data('bootstrapValidator');
+        this.$country = this.bv.getFieldElements('country');
+        this.$phone   = this.bv.getFieldElements('phone');
+    });
+
+    afterEach(function() {
+        $('#phoneForm').bootstrapValidator('destroy').remove();
+    });
+
+    it('dynamic country', function() {
+        this.$phone.attr('data-bv-phone-country', 'country');
+        this.bv.destroy();
+        this.bv = $('#phoneForm').bootstrapValidator().data('bootstrapValidator');
+
+        this.$country.val('BR');
+        this.$phone.val('16920894635');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$country.val('FR');
+        this.$phone.val('0644444444');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$country.val('GB');
+        this.$phone.val('012345678900');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeFalsy();
+    });
+
+    it('Brazil phone number', function() {
+        this.bv.updateOption('phone', 'phone', 'country', 'BR');
+
+        // Valid samples
+        var validSamples = [
+            '0800.000.00.00', '0800-000-00-00', '0800 000 00 00', '0800-00-00-00', '0800.00.00.00', '0800 00 00 00',
+            '0800-000-0000', '0800 000 0000', '0800.000.0000', '08000000000',
+            '1692089-4635', '16920894635', '16992089-4635', '16 99202-4635', '(16)99202-4635', '(16)92089-4635',
+            '(16) 92089-4635', '(15) 4343-4343', '+55 15 3702-7523', '(+55) 15 3702-7523', '(+55)1537027523',
+            '(+55)(15)3702-7523', '(+55) 15 3702-7523', '(+55) 15 99202-7523', '99202-4635', '(16) 9208-4635'
+        ];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$phone.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+    });
+
+    it('China phone number', function() {
+        this.bv.updateOption('phone', 'phone', 'country', 'CN');
+
+        // Valid samples
+        var validSamples = [
+            '18911111111', '189 1111 1111', '189-1111-1111', '0086-18911111111', '+86-18911111111',
+            '86-18911111111', '0086 18911111111', '+86 18911111111', '86 18911111111', '0086 189-1111-1111',
+            '+86 189-1111-1111', '86 189-1111-1111', '02011111111', '020-11111111', '020 11111111',
+            '020 1111 1111', '020-1111-1111', '0086 020 82803159', '0086-020-82803159', '0086-020-82803159',
+            '+86 20 61302222-8866', '+86 20 6130-2222-8866', '+86 10 59081185'
+        ];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$phone.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+    });
+
+    it('Czech Republic phone number', function() {
+        this.bv.updateOption('phone', 'phone', 'country', 'CZ');
+
+        // Valid samples
+        var validSamples = [
+            '00420123456789', '00420 123456789', '00420 123 456 789', '00 420 123 456 789',
+            '+420123456789', '+420 123456789', '+420 123 456 789', '123456789', '123 456 789'
+        ];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$phone.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = [
+            '420123456789', '420 123456789', '420 123 456 789', '00421123456789', '00421 123456789',
+            '00421 123 456 789', '00 421 123 456 789', '+421123456789', '+421 123456789',
+            '+421 123 456 789'
+        ];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$phone.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('France phone number', function() {
+        this.bv.updateOption('phone', 'phone', 'country', 'FR');
+
+        // Valid samples
+        var validSamples = [
+            // National formats
+            '0644444444', '06 44 44 44 44', '06-44-44-44-44', '06.44.44.44.44',
+            // International formats
+            '+33644444444', '+336.44.44.44.44', '+33 6.44.44.44.44', '0033644444444', '00336.44.44.44.44',
+            '0033 6.44.44.44.44',
+            // Some times
+            '+33(0)644444444', '+33 (0) 644444444'
+        ];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$phone.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = [
+            // The separator between pairs of digits is not the same
+            '06 44.44-44.44', '06 44 44-44.44', '06 44 44-4444', '06 44 44-4444',
+            // Too many digits
+            '06444444444444',
+            // Missing leading 0
+            '6644444444',
+            // Too much non-numeric characters
+            '06  44.44-44.44', '+33 (0)  644444444',
+            // Bad parenthesis
+            '(0)644444444',
+            // Bad separator after the international prefix
+            '+33-(0)-644444444', '+33 (0)-644444444', '+33-(0) 644444444',
+            // Trailing separator
+            '06.44.44.44.44.'
+        ];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$phone.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Germany phone number', function() {
+        this.bv.updateOption('phone', 'phone', 'country', 'DE');
+
+        // Valid samples
+        var validSamples = ['+49(89)123456', '089-1234567', '0891234567', '0049-89-123456', '089 123456-78'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$phone.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+    });
+
+    it('United Kingdom phone number', function() {
+        this.bv.updateOption('phone', 'phone', 'country', 'GB');
+
+        // Valid samples
+        var validSamples = [
+            // National formats
+            '01611234567', '0161 123 4567', '(0161) 123 4567', '0161-123-4567',
+            // International formats
+            '+44 161 123 4567', '+441611234567', '+44(0)161234567', '00 44 161 1234567', '(011) 44 161 234567', '0161-158-5587',
+            // Extensions
+            '0161 123 4567 ext. 123', '01611234567x123', '+44161234567x123', '+44 (0) 161 1234567 ext 123'
+        ];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$phone.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = [
+            '012345678900', // Too many digits
+            '1611234567',   // Missing trunk
+            '012345678',    // Not enough digits
+            '123 4567',     // Missing area code
+            '061 123 4567'  // Invalid area code
+        ];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$phone.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Morocco phone number', function() {
+        this.bv.updateOption('phone', 'phone', 'country', 'MA');
+
+        // Valid samples
+        var validSamples = [
+            // National formats
+            '0644444444', '0610245896', '0630548564', '06 44 44 44 44', '06-44-44-44-44', '06.44.44.44.44', '06 44.44-44.44',
+            '0528254856', '0535484541', '05 28 44 44 44', '05-28-44.44.44', '05.28.44.44.44', '05 28.44-44.44',
+            // International formats
+            '+212644444444', '+2126.44.44.44.44', '+212 6.44.44.44.44', '00212644444444', '002126.44.44.44.44', '00212 6.44.44.44.44',
+            // Some times
+            '+212(0)644444444', '+212 (0) 644444444'
+        ];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$phone.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = [
+            '0625468961', '0512548632', '0542564896',   // Not a valid phone numbers
+            '06444444444444',                           // Too many digits
+            '6644444444',                               // Missing leading 0
+            '06  44.44-44.44', '+212 (0)  644444444',   // Too much non-numeric characters
+            '(0)644444444'                              // Bad parenthesis
+        ];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$phone.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Pakistan phone number', function() {
+        this.bv.updateOption('phone', 'phone', 'country', 'PK');
+
+        // Valid samples
+        var validSamples = ['03336527366'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$phone.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+    });
+
+    it('Romania phone number', function() {
+        this.bv.updateOption('phone', 'phone', 'country', 'RO');
+
+        // Valid samples
+        var validSamples = [
+            '+40213-564-864', '+40213.564.864', '+40213 564 864', '0213-564-864',
+            '0213564864', '0313564864',
+            '0720512346', '0730512346', '0740512346', '0750512346', '+40750512346', '+40750.512.346',
+            '0760512346', '0770512346', '0780512346'
+        ];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$phone.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = [
+            '0213/564/864', // Invalid separator
+            '0413564864',   // Invalid land line number (The valid one should be +402, +403 or inside country 02 - 03)
+            '0790512346'    // Invalid mobile phone number (The valid one is 072xxxxxxx - 078xxxxxxx)
+        ];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$phone.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Russia phone number', function() {
+        this.bv.updateOption('phone', 'phone', 'country', 'RU');
+
+        // Valid samples
+        var validSamples = ['+7(911)976-91-04'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$phone.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+    });
+
+    it('Slovakia phone number', function() {
+        this.bv.updateOption('phone', 'phone', 'country', 'SK');
+
+        // Valid samples
+        var validSamples = [
+            '00420123456789', '00420 123456789', '00420 123 456 789', '00 420 123 456 789',
+            '+420123456789', '+420 123456789', '+420 123 456 789', '123456789', '123 456 789'
+        ];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$phone.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = [
+            '420123456789', '420 123456789', '420 123 456 789', '00421123456789', '00421 123456789',
+            '00421 123 456 789', '00 421 123 456 789', '+421123456789', '+421 123456789',
+            '+421 123 456 789'
+        ];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$phone.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+});
+
+describe('stringLength', function() {
+    beforeEach(function() {
+        $([
+            '<form class="form-horizontal" id="stringLengthForm">',
+                '<div class="form-group">',
+                    '<input type="text" name="textCharMaxLength" data-bv-stringlength data-bv-stringlength-max="10" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<textarea name="textareaCharMaxLength" data-bv-stringlength data-bv-stringlength-max="10"></textarea>',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="textUTF8BytesMaxLength" data-bv-stringlength data-bv-stringlength-utf8bytes="true" data-bv-stringlength-max="10" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<textarea name="textareaUTF8BytesMaxLength" data-bv-stringlength data-bv-stringlength-utf8bytes="true" data-bv-stringlength-max="10"></textarea>',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="textCharMinLength" data-bv-stringlength data-bv-stringlength-min="5" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<textarea name="textareaCharMinLength" data-bv-stringlength data-bv-stringlength-min="5"></textarea>',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="textUTF8BytesMinLength" data-bv-stringlength data-bv-stringlength-utf8bytes="true" data-bv-stringlength-min="5" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<textarea name="textareaUTF8BytesMinLength" data-bv-stringlength data-bv-stringlength-utf8bytes="true" data-bv-stringlength-min="5"></textarea>',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="textCharMinMaxLength" data-bv-stringlength data-bv-stringlength-min="5" data-bv-stringlength-max="10" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<textarea name="textareaCharMinMaxLength" data-bv-stringlength data-bv-stringlength-min="5" data-bv-stringlength-max="10"></textarea>',
+                '</div>',
+                '<div class="form-group">',
+                    '<input type="text" name="textUTF8BytesMinMaxLength" data-bv-stringlength data-bv-stringlength-utf8bytes="true" data-bv-stringlength-min="5" data-bv-stringlength-max="10" />',
+                '</div>',
+                '<div class="form-group">',
+                    '<textarea name="textareaUTF8BytesMinMaxLength" data-bv-stringlength data-bv-stringlength-utf8bytes="true" data-bv-stringlength-min="5" data-bv-stringlength-max="10"></textarea>',
+                '</div>',
+            '</form>'
+        ].join('\n')).appendTo('body');
+
+        $('#stringLengthForm').bootstrapValidator();
+
+        this.bv                             = $('#stringLengthForm').data('bootstrapValidator');
+        this.$textCharMaxLength             = this.bv.getFieldElements('textCharMaxLength');
+        this.$textareaCharMaxLength         = this.bv.getFieldElements('textareaCharMaxLength');
+        this.$textUTF8BytesMaxLength        = this.bv.getFieldElements('textUTF8BytesMaxLength');
+        this.$textareaUTF8BytesMaxLength    = this.bv.getFieldElements('textareaUTF8BytesMaxLength');
+        this.$textCharMinLength             = this.bv.getFieldElements('textCharMinLength');
+        this.$textareaCharMinLength         = this.bv.getFieldElements('textareaCharMinLength');
+        this.$textUTF8BytesMinLength        = this.bv.getFieldElements('textUTF8BytesMinLength');
+        this.$textareaUTF8BytesMinLength    = this.bv.getFieldElements('textareaUTF8BytesMinLength');
+        this.$textCharMinMaxLength          = this.bv.getFieldElements('textCharMinMaxLength');
+        this.$textareaCharMinMaxLength      = this.bv.getFieldElements('textareaCharMinMaxLength');
+        this.$textUTF8BytesMinMaxLength     = this.bv.getFieldElements('textUTF8BytesMinMaxLength');
+        this.$textareaUTF8BytesMinMaxLength = this.bv.getFieldElements('textareaUTF8BytesMinMaxLength');
+    });
+
+    afterEach(function() {
+        $('#stringLengthForm').bootstrapValidator('destroy').remove();
+    });
+
+    it('Valid max lengths', function() {
+        this.$textCharMaxLength.val('123456789♥');
+        this.$textareaCharMaxLength.val('123456789♥');
+        this.$textUTF8BytesMaxLength.val('1234567♥');
+        this.$textareaUTF8BytesMaxLength.val('1234567♥');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid min lengths', function() {
+        this.$textCharMinLength.val('1234♥');
+        this.$textareaCharMinLength.val('1234♥');
+        this.$textUTF8BytesMinLength.val('12♥');
+        this.$textareaUTF8BytesMinLength.val('12♥');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Valid min and max lengths', function() {
+        this.$textCharMinMaxLength.val('1234♥');
+        this.$textareaCharMinMaxLength.val('1234♥');
+        this.$textUTF8BytesMinMaxLength.val('12♥');
+        this.$textareaUTF8BytesMinMaxLength.val('12♥');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$textCharMinMaxLength.val('123456789♥');
+        this.$textareaCharMinMaxLength.val('123456789♥');
+        this.$textUTF8BytesMinMaxLength.val('1234567♥');
+        this.$textareaUTF8BytesMinMaxLength.val('1234567♥');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+    });
+
+    it('Invalid max lengths', function() {
+        this.$textCharMaxLength.val('1234567890♥');           // 11 chars when max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textareaCharMaxLength.val('1234567890♥');       // 11 chars when max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textUTF8BytesMaxLength.val('12345678♥');        // 11 UTF-8 bytes when max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textareaUTF8BytesMaxLength.val('12345678♥');    // 11 UTF-8 bytes when max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+    });
+
+    it('Invalid min lengths', function() {
+        this.$textCharMinLength.val('123♥');                  // 4 chars when min is 5
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textareaCharMinLength.val('123♥');              // 4 chars when min is 5
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textUTF8BytesMinLength.val('1♥');               // 4 UTF-8 bytes when min is 5
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textareaUTF8BytesMinLength.val('1♥');           // 4 UTF-8 bytes when min is 5
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+    });
+
+    it('Invalid min and max lengths', function() {
+        this.$textCharMinMaxLength.val('123♥');               // 4 chars when min is 5 and max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textareaCharMinMaxLength.val('123♥');           // 4 chars when min is 5 and max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textUTF8BytesMinMaxLength.val('1♥');            // 4 UTF-8 bytes when min is 5 and max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textareaUTF8BytesMinMaxLength.val('1♥');        // 4 UTF-8 bytes when min is 5 and max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textCharMinMaxLength.val('1234567890♥');        // 11 chars when min is 5 and max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textareaCharMinMaxLength.val('1234567890♥');    // 11 chars when min is 5 and max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textUTF8BytesMinMaxLength.val('12345678♥');     // 11 UTF-8 bytes when min is 5 and max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textareaUTF8BytesMinMaxLength.val('12345678♥'); // 11 UTF-8 bytes when min is 5 and max is 10
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+    });
+
+    it('trim option', function() {
+        this.bv.updateOption('textCharMaxLength', 'stringLength', 'trim', false);
+        this.$textCharMaxLength.val('');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(true);
+
+        this.bv.resetForm();
+        this.$textCharMaxLength.val('           ');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.resetForm();
+        this.$textCharMaxLength.val('1234567890   ');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+
+        this.bv.updateOption('textCharMaxLength', 'stringLength', 'trim', true);
+        this.bv.resetForm();
+        this.$textCharMaxLength.val('   ');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(true);
+
+        this.bv.resetForm();
+        this.$textCharMaxLength.val('                ');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(true);
+
+        this.bv.resetForm();
+        this.$textCharMaxLength.val('  0123456789   ');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(true);
+
+        this.bv.resetForm();
+        this.$textCharMaxLength.val('  01234567890  ');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+    });
+});
+
 describe('uri', function() {
-    beforeEach(function () {
+    beforeEach(function() {
         $([
             '<form class="form-horizontal" id="uriForm">',
                 '<div id="msg"></div>',
@@ -4100,7 +7026,7 @@ describe('uri', function() {
         this.$uri = this.bv.getFieldElements('uri');
     });
 
-    afterEach(function () {
+    afterEach(function() {
         $('#uriForm').bootstrapValidator('destroy').remove();
     });
 
@@ -4281,6 +7207,7 @@ describe('vat', function() {
                         '<option value="SE">Sweden</option>',
                         '<option value="CH">Switzerland</option>',
                         '<option value="GB">United Kingdom</option>',
+                        '<option value="VE">Venezuela</option>',
                         '<option value="ZA">South Africa</option>',
                     '</select>',
                 '</div>',
@@ -4328,8 +7255,10 @@ describe('vat', function() {
     });
 
     it('Austrian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'AT');
+
         // Valid samples
-        var validSamples = ['ATU13585627'];
+        var validSamples = ['ATU13585627', 'U13585627'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4338,7 +7267,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['ATU13585626'];
+        var invalidSamples = ['ATU13585626', 'U13585626'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4348,8 +7277,10 @@ describe('vat', function() {
     });
 
     it('Belgian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'BE');
+
         // Valid samples
-        var validSamples = ['BE0428759497'];
+        var validSamples = ['BE0428759497', '0428759497'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4358,7 +7289,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['BE431150351'];
+        var invalidSamples = ['BE431150351', '431150351'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4368,8 +7299,10 @@ describe('vat', function() {
     });
 
     it('Bulgarian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'BG');
+
         // Valid samples
-        var validSamples = ['BG175074752', 'BG7523169263', 'BG8032056031', 'BG7542011030', 'BG7111042925'];
+        var validSamples = ['BG175074752', 'BG7523169263', 'BG8032056031', 'BG7542011030', 'BG7111042925', '175074752', '7523169263', '8032056031'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4378,7 +7311,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['BG175074753', 'BG7552A10004', 'BG7111042922'];
+        var invalidSamples = ['BG175074753', 'BG7552A10004', 'BG7111042922', '175074753', '7552A10004'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4388,8 +7321,10 @@ describe('vat', function() {
     });
 
     it('Cypriot VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'CY');
+
         // Valid samples
-        var validSamples = ['CY10259033P'];
+        var validSamples = ['CY10259033P', '10259033P'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4398,7 +7333,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['CY10259033Z'];
+        var invalidSamples = ['CY10259033Z', '10259033Z'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4408,8 +7343,10 @@ describe('vat', function() {
     });
 
     it('Czech Republic VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'CZ');
+
         // Valid samples
-        var validSamples = ['CZ25123891', 'CZ7103192745', 'CZ991231123', 'CZ640903926'];
+        var validSamples = ['CZ25123891', 'CZ7103192745', 'CZ991231123', 'CZ640903926', '25123891', '7103192745'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4418,7 +7355,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['CZ25123890', 'CZ1103492745', 'CZ590312123'];
+        var invalidSamples = ['CZ25123890', 'CZ1103492745', 'CZ590312123', '25123890', '1103492745'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4428,8 +7365,10 @@ describe('vat', function() {
     });
 
     it('German VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'DE');
+
         // Valid samples
-        var validSamples = ['DE136695976'];
+        var validSamples = ['DE136695976', '136695976'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4438,7 +7377,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['DE136695978'];
+        var invalidSamples = ['DE136695978', '136695978'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4448,8 +7387,10 @@ describe('vat', function() {
     });
 
     it('Danish VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'DK');
+
         // Valid samples
-        var validSamples = ['DK13585628'];
+        var validSamples = ['DK13585628', '13585628'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4458,7 +7399,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['DK13585627'];
+        var invalidSamples = ['DK13585627', '13585627'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4468,8 +7409,10 @@ describe('vat', function() {
     });
 
     it('Estonian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'EE');
+
         // Valid samples
-        var validSamples = ['EE100931558', 'EE100594102'];
+        var validSamples = ['EE100931558', 'EE100594102', '100931558', '100594102'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4478,7 +7421,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['EE100594103'];
+        var invalidSamples = ['EE100594103', '100594103'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4488,8 +7431,10 @@ describe('vat', function() {
     });
 
     it('Spanish VAT number (NIF)', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'ES');
+
         // Valid samples
-        var validSamples = ['ES54362315K', 'ESX2482300W', 'ESX5253868R', 'ESM1234567L', 'ESJ99216582', 'ESB58378431', 'ESB64717838'];
+        var validSamples = ['ES54362315K', 'ESX2482300W', 'ESX5253868R', 'ESM1234567L', 'ESJ99216582', 'ESB58378431', 'ESB64717838', '54362315K', 'X2482300W', 'X5253868R', 'M1234567L', 'J99216582'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4498,7 +7443,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['ES54362315Z', 'ESX2482300A', 'ESJ99216583'];
+        var invalidSamples = ['ES54362315Z', 'ESX2482300A', 'ESJ99216583', '54362315Z', 'X2482300A'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4508,8 +7453,10 @@ describe('vat', function() {
     });
 
     it('Finnish VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'FI');
+
         // Valid samples
-        var validSamples = ['FI20774740'];
+        var validSamples = ['FI20774740', '20774740'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4518,7 +7465,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['FI20774741'];
+        var invalidSamples = ['FI20774741', '20774741'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4528,8 +7475,10 @@ describe('vat', function() {
     });
 
     it('French VAT number (TVA)', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'FR');
+
         // Valid samples
-        var validSamples = ['FR40303265045', 'FR23334175221', 'FRK7399859412', 'FR4Z123456782'];
+        var validSamples = ['FR40303265045', 'FR23334175221', 'FRK7399859412', 'FR4Z123456782', '40303265045', '23334175221', 'K7399859412'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4538,7 +7487,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['FR84323140391'];
+        var invalidSamples = ['FR84323140391', '84323140391'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4548,8 +7497,10 @@ describe('vat', function() {
     });
 
     it('United Kingdom VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'GB');
+
         // Valid samples
-        var validSamples = ['GB980780684'];
+        var validSamples = ['GB980780684', '980780684'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4558,7 +7509,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['GB802311781'];
+        var invalidSamples = ['GB802311781', '802311781'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4568,8 +7519,10 @@ describe('vat', function() {
     });
 
     it('Greek VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'GR');
+
         // Valid samples
-        var validSamples = ['GR023456780', 'EL094259216'];
+        var validSamples = ['GR023456780', 'EL094259216', '023456780', '094259216'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4578,7 +7531,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['EL123456781'];
+        var invalidSamples = ['GR123456781', '123456781'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4588,8 +7541,10 @@ describe('vat', function() {
     });
 
     it('Hungarian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'HU');
+
         // Valid samples
-        var validSamples = ['HU12892312'];
+        var validSamples = ['HU12892312', '12892312'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4598,7 +7553,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['HU12892313'];
+        var invalidSamples = ['HU12892313', '12892313'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4608,8 +7563,10 @@ describe('vat', function() {
     });
 
     it('Croatian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'HR');
+
         // Valid samples
-        var validSamples = ['HR33392005961'];
+        var validSamples = ['HR33392005961', '33392005961'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4618,7 +7575,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['HR33392005962'];
+        var invalidSamples = ['HR33392005962', '33392005962'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4628,8 +7585,10 @@ describe('vat', function() {
     });
 
     it('Irish VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'IE');
+
         // Valid samples
-        var validSamples = ['IE6433435F', 'IE6433435OA', 'IE8D79739I'];
+        var validSamples = ['IE6433435F', 'IE6433435OA', 'IE8D79739I', '6433435F', '6433435OA', '8D79739I'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4638,7 +7597,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['IE8D79738J'];
+        var invalidSamples = ['IE8D79738J', '8D79738J'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4648,8 +7607,10 @@ describe('vat', function() {
     });
 
     it('Iceland VAT (VSK) number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'IS');
+
         // Valid samples
-        var validSamples = ['IS11111', 'IS111111'];
+        var validSamples = ['IS11111', 'IS111111', '11111', '111111'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4658,7 +7619,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['IS1234567', 'IS123456ABC'];
+        var invalidSamples = ['IS1234567', 'IS123456ABC', '1234567', '123456ABC'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4668,8 +7629,10 @@ describe('vat', function() {
     });
 
     it('Italian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'IT');
+
         // Valid samples
-        var validSamples = ['IT00743110157'];
+        var validSamples = ['IT00743110157', '00743110157'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4678,7 +7641,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['IT00743110158'];
+        var invalidSamples = ['IT00743110158', '00743110158'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4688,8 +7651,10 @@ describe('vat', function() {
     });
 
     it('Lithuanian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'LT');
+
         // Valid samples
-        var validSamples = ['LT119511515', 'LT100001919017', 'LT100004801610'];
+        var validSamples = ['LT119511515', 'LT100001919017', 'LT100004801610', '119511515', '100001919017', '100004801610'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4698,7 +7663,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['LT100001919018'];
+        var invalidSamples = ['LT100001919018', '100001919018'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4708,8 +7673,10 @@ describe('vat', function() {
     });
 
     it('Luxembourg VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'LU');
+
         // Valid samples
-        var validSamples = ['LU15027442'];
+        var validSamples = ['LU15027442', '15027442'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4718,7 +7685,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['LU15027443'];
+        var invalidSamples = ['LU15027443', '15027443'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4728,8 +7695,10 @@ describe('vat', function() {
     });
 
     it('Latvian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'LV');
+
         // Valid samples
-        var validSamples = ['LV40003521600', 'LV16117519997'];
+        var validSamples = ['LV40003521600', 'LV16117519997', '40003521600', '16117519997'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4738,7 +7707,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['LV40003521601', 'LV16137519997'];
+        var invalidSamples = ['LV40003521601', 'LV16137519997', '40003521601', '16137519997'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4748,8 +7717,10 @@ describe('vat', function() {
     });
 
     it('Maltese VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'MT');
+
         // Valid samples
-        var validSamples = ['MT11679112'];
+        var validSamples = ['MT11679112', '11679112'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4758,7 +7729,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['MT11679113'];
+        var invalidSamples = ['MT11679113', '11679113'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4768,8 +7739,10 @@ describe('vat', function() {
     });
 
     it('Dutch VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'NL');
+
         // Valid samples
-        var validSamples = ['NL004495445B01'];
+        var validSamples = ['NL004495445B01', '004495445B01'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4778,7 +7751,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['NL123456789B90'];
+        var invalidSamples = ['NL123456789B90', '123456789B90'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4788,8 +7761,10 @@ describe('vat', function() {
     });
 
     it('Polish VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'PL');
+
         // Valid samples
-        var validSamples = ['PL8567346215'];
+        var validSamples = ['PL8567346215', '8567346215'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4798,7 +7773,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['PL8567346216'];
+        var invalidSamples = ['PL8567346216', '8567346216'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4808,8 +7783,10 @@ describe('vat', function() {
     });
 
     it('Portuguese VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'PT');
+
         // Valid samples
-        var validSamples = ['PT501964843'];
+        var validSamples = ['PT501964843', '501964843'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4818,7 +7795,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['PT501964842'];
+        var invalidSamples = ['PT501964842', '501964842'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4828,8 +7805,10 @@ describe('vat', function() {
     });
 
     it('Romanian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'RO');
+
         // Valid samples
-        var validSamples = ['RO18547290'];
+        var validSamples = ['RO18547290', '18547290'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4838,7 +7817,29 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['RO18547291'];
+        var invalidSamples = ['RO18547291', '18547291'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$vat.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Russian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'RU');
+
+        // Valid samples
+        var validSamples = ['RU7805145876', 'RU781300557475', '7805145876', '781300557475'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$vat.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['RU7805145877', 'RU781300557474', '7805145877', '781300557474'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4848,8 +7849,10 @@ describe('vat', function() {
     });
 
     it('Swedish VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'SE');
+
         // Valid samples
-        var validSamples = ['SE123456789701'];
+        var validSamples = ['SE123456789701', '123456789701'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4858,7 +7861,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['SE123456789101'];
+        var invalidSamples = ['SE123456789101', '123456789101'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4868,8 +7871,10 @@ describe('vat', function() {
     });
 
     it('Slovenian VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'SI');
+
         // Valid samples
-        var validSamples = ['SI50223054'];
+        var validSamples = ['SI50223054', '50223054'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4878,7 +7883,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['SI50223055'];
+        var invalidSamples = ['SI50223055', '50223055'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4888,8 +7893,10 @@ describe('vat', function() {
     });
 
     it('Slovak VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'SK');
+
         // Valid samples
-        var validSamples = ['SK2022749619'];
+        var validSamples = ['SK2022749619', '2022749619'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4898,7 +7905,7 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['SK2022749618'];
+        var invalidSamples = ['SK2022749618', '2022749618'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4908,8 +7915,10 @@ describe('vat', function() {
     });
 
     it('South African VAT number', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'ZA');
+
         // Valid samples
-        var validSamples = ['ZA4012345678'];
+        var validSamples = ['ZA4012345678', '4012345678'];
         for (var i in validSamples) {
             this.bv.resetForm();
             this.$vat.val(validSamples[i]);
@@ -4918,7 +7927,29 @@ describe('vat', function() {
         }
 
         // Invalid samples
-        var invalidSamples = ['ZA40123456789', 'ZA0123456789'];
+        var invalidSamples = ['ZA40123456789', 'ZA0123456789', '40123456789', '0123456789'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$vat.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Venezuelan VAT number (RIF)', function() {
+        this.bv.updateOption('vat', 'vat', 'country', 'VE');
+
+        // Valid samples
+        var validSamples = ['VEJ309272292', 'VEV242818101', 'VEJ000126518', 'VEJ000458324', 'J309272292', 'V242818101', 'J000126518', 'J000458324'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$vat.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['VEJ309272293', 'VEV242818100', 'J000126519', 'J000458323'];
         for (i in invalidSamples) {
             this.bv.resetForm();
             this.$vat.val(invalidSamples[i]);
@@ -4952,13 +7983,18 @@ describe('zipCode', function() {
                     '<div class="col-md-2">',
                         '<select class="form-control" name="country">',
                             '<option value="">Select a country</option>',
-                            '<option value="US">United States</option>',
                             '<option value="CA">Canada</option>',
+                            '<option value="CZ">Czech Republic</option>',
                             '<option value="DK">Denmark</option>',
+                            '<option value="FR">France</option>',
+                            '<option value="GB">United Kingdom</option>',
+                            '<option value="IE">Ireland</option>',
                             '<option value="IT">Italy</option>',
                             '<option value="NL">Netherlands</option>',
+                            '<option value="PT">Portugal</option>',
                             '<option value="SE">Sweden</option>',
-                            '<option value="GB">United Kingdom</option>',
+                            '<option value="SK">Slovakia</option>',
+                            '<option value="US">United States</option>',
                         '</select>',
                     '</div>',
                 '</div>',
@@ -4984,17 +8020,6 @@ describe('zipCode', function() {
 
     afterEach(function() {
         $('#zipCodeForm').bootstrapValidator('destroy').remove();
-    });
-
-    it('country code US', function() {
-        this.$zipCode.val('12345');
-        this.bv.validate();
-        expect(this.bv.isValid()).toBeTruthy();
-
-        this.bv.resetForm();
-        this.$zipCode.val('123');
-        this.bv.validate();
-        expect(this.bv.isValid()).toEqual(false);
     });
 
     it('country code updateOption()', function() {
@@ -5131,5 +8156,192 @@ describe('zipCode', function() {
         this.bv.validate();
         expect(this.bv.isValid()).toEqual(false);
         expect(this.bv.getMessages(this.$zipCode, 'zipCode')[0]).toEqual($.fn.bootstrapValidator.helpers.format($.fn.bootstrapValidator.i18n.zipCode.countryNotSupported, 'NOT_SUPPORTED'));
+    });
+
+    it('US zipcode', function() {
+        this.$zipCode.val('12345');
+        this.bv.validate();
+        expect(this.bv.isValid()).toBeTruthy();
+
+        this.bv.resetForm();
+        this.$zipCode.val('123');
+        this.bv.validate();
+        expect(this.bv.isValid()).toEqual(false);
+    });
+
+    it('Czech Republic postal code', function() {
+        this.bv.updateOption('zc', 'zipCode', 'country', 'CZ');
+
+        // Valid samples
+        var validSamples = ['12345', '123 45'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['12 345', '123456', '1 2345', '1234 5', '12 3 45'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Slovakia postal code', function() {
+        this.bv.updateOption('zc', 'zipCode', 'country', 'SK');
+
+        // Valid samples
+        var validSamples = ['12345', '123 45'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['12 345', '123456', '1 2345', '1234 5', '12 3 45'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('France postal code', function() {
+        this.bv.updateOption('zc', 'zipCode', 'country', 'FR');
+
+        // Valid samples
+        var validSamples = ['12340', '01230', '75116'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['123 45', '12 345', '123456', '1 2345', '1234 5', '12 3 45', '1234A'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Eircode (Ireland postal code)', function() {
+        this.bv.updateOption('zc', 'zipCode', 'country', 'IE');
+
+        // Valid samples
+        var validSamples = ['A65 F4E2', 'D6W FNT4', 'T37 F8HK'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['a65 f4e2', 'D6W FNTO', 'T37F8HK'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Portugal postal code', function() {
+        this.bv.updateOption('zc', 'zipCode', 'country', 'PT');
+
+        // Valid samples
+        var validSamples = ['2435-459', '1000-000', '1234-456'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['0123-456', '1234456', '1234-ABC', '1234 456'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Austria postal code', function() {
+        this.bv.updateOption('zc', 'zipCode', 'country', 'AT');
+
+        // Valid samples
+        var validSamples = ['6020', '1010', '4853'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['0020', '12345', '102', '12AB', 'AT 6020 XY'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Germany postal code', function() {
+        this.bv.updateOption('zc', 'zipCode', 'country', 'DE');
+
+        // Valid samples
+        var validSamples = ['52238', '01001', '09107'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['01000', '99999', '102', 'ABCDE', 'DE 52240 XY'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
+    });
+
+    it('Switzerland postal code', function() {
+        this.bv.updateOption('zc', 'zipCode', 'country', 'CH');
+
+        // Valid samples
+        var validSamples = [ '8280', '8090', '8238', '9490'];
+        for (var i in validSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(validSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toBeTruthy();
+        }
+
+        // Invalid samples
+        var invalidSamples = ['0123', '99999', '102', 'ABCD', 'CH-5224 XY'];
+        for (i in invalidSamples) {
+            this.bv.resetForm();
+            this.$zipCode.val(invalidSamples[i]);
+            this.bv.validate();
+            expect(this.bv.isValid()).toEqual(false);
+        }
     });
 });

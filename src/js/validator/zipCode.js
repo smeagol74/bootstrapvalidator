@@ -1,19 +1,29 @@
 (function($) {
     $.fn.bootstrapValidator.i18n.zipCode = $.extend($.fn.bootstrapValidator.i18n.zipCode || {}, {
-        'default': 'Please enter a valid zip code',
+        'default': 'Please enter a valid postal code',
         countryNotSupported: 'The country code %s is not supported',
-        country: 'Please enter a valid %s',
+        country: 'Please enter a valid postal code in %s',
         countries: {
-            BR: 'Brazilian postal code',
-            CA: 'Canadian postal code',
-            DK: 'Danish postal code',
-            GB: 'United Kingdom postal code',
-            IT: 'Italian postal code',
-            MA: 'Moroccan postal code',
-            NL: 'Dutch postal code',
-            SE: 'Swiss postal code',
-            SG: 'Singapore postal code',
-            US: 'US zip code'
+            AT: 'Austria',
+            BR: 'Brazil',
+            CA: 'Canada',
+            CH: 'Switzerland',
+            CZ: 'Czech Republic',
+            DE: 'Germany',
+            DK: 'Denmark',
+            FR: 'France',
+            GB: 'United Kingdom',
+            IE: 'Ireland',
+            IT: 'Italy',
+            MA: 'Morocco',
+            NL: 'Netherlands',
+            PT: 'Portugal',
+            RO: 'Romania',
+            RU: 'Russia',
+            SE: 'Sweden',
+            SG: 'Singapore',
+            SK: 'Slovakia',
+            US: 'USA'
         }
     });
 
@@ -23,7 +33,7 @@
             country: 'country'
         },
 
-        COUNTRY_CODES: ['BR', 'CA', 'DK', 'GB', 'IT', 'MA', 'NL', 'SE', 'SG', 'US'],
+        COUNTRY_CODES: [ 'AT', 'BR', 'CA', 'CH', 'CZ', 'DE', 'DK', 'FR', 'GB', 'IE', 'IT', 'MA', 'NL', 'PT', 'RO', 'RU', 'SE', 'SG', 'SK', 'US'],
 
         /**
          * Return true if and only if the input value is a valid country zip code
@@ -67,6 +77,11 @@
             var isValid = false;
             country = country.toUpperCase();
             switch (country) {
+                // http://en.wikipedia.org/wiki/List_of_postal_codes_in_Austria
+                case 'AT':
+                    isValid = /^([1-9]{1})(\d{3})$/.test(value);
+                    break;
+
                 case 'BR':
                     isValid = /^(\d{2})([\.]?)(\d{3})([\-]?)(\d{3})$/.test(value);
                     break;
@@ -75,12 +90,37 @@
                     isValid = /^(?:A|B|C|E|G|H|J|K|L|M|N|P|R|S|T|V|X|Y){1}[0-9]{1}(?:A|B|C|E|G|H|J|K|L|M|N|P|R|S|T|V|W|X|Y|Z){1}\s?[0-9]{1}(?:A|B|C|E|G|H|J|K|L|M|N|P|R|S|T|V|W|X|Y|Z){1}[0-9]{1}$/i.test(value);
                     break;
 
+                case 'CH':
+                    isValid = /^([1-9]{1})(\d{3})$/.test(value);
+                    break;
+
+                case 'CZ':
+                    // Test: http://regexr.com/39hhr
+                    isValid = /^(\d{3})([ ]?)(\d{2})$/.test(value);
+                    break;
+
+                // http://stackoverflow.com/questions/7926687/regular-expression-german-zip-codes
+                case 'DE':
+                    isValid = /^(?!01000|99999)(0[1-9]\d{3}|[1-9]\d{4})$/.test(value);
+                    break;
+
                 case 'DK':
                     isValid = /^(DK(-|\s)?)?\d{4}$/i.test(value);
                     break;
 
+                // http://en.wikipedia.org/wiki/Postal_codes_in_France
+                case 'FR':
+                    isValid = /^[0-9]{5}$/i.test(value);
+                    break;
+
                 case 'GB':
                     isValid = this._gb(value);
+                    break;
+
+                // http://www.eircode.ie/docs/default-source/Common/prepare-your-business-for-eircode---published-v2.pdf?sfvrsn=2
+                // Test: http://refiddle.com/1kpl
+                case 'IE':
+                    isValid = /^(D6W|[ACDEFHKNPRTVWXY]\d{2})\s[0-9ACDEFHKNPRTVWXY]{4}$/.test(value);
                     break;
 
                 // http://en.wikipedia.org/wiki/List_of_postal_codes_in_Italy
@@ -98,14 +138,32 @@
                     isValid = /^[1-9][0-9]{3} ?(?!sa|sd|ss)[a-z]{2}$/i.test(value);
                     break;
 
+                // Test: http://refiddle.com/1l2t
+                case 'PT':
+                    isValid = /^[1-9]\d{3}-\d{3}$/.test(value);
+                    break;
+
+                case 'RO':
+                    isValid = /^(0[1-8]{1}|[1-9]{1}[0-5]{1})?[0-9]{4}$/i.test(value);
+                    break;
+
+                case 'RU':
+                    isValid = /^[0-9]{6}$/i.test(value);
+                    break;
+
                 case 'SE':
                     isValid = /^(S-)?\d{3}\s?\d{2}$/i.test(value);
                     break;
 
                 case 'SG':
                     isValid = /^([0][1-9]|[1-6][0-9]|[7]([0-3]|[5-9])|[8][0-2])(\d{4})$/i.test(value);
-                    break;                
-                
+                    break;
+
+                case 'SK':
+                    // Test: http://regexr.com/39hhr
+                    isValid = /^(\d{3})([ ]?)(\d{2})$/.test(value);
+                    break;
+
                 case 'US':
                 /* falls through */
                 default:
